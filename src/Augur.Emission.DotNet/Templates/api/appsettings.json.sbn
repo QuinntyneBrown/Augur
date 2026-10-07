@@ -1,0 +1,25 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+{{~ if Ef ~}}
+  "ConnectionStrings": {
+    "Default": "{{ ConnectionString }}"
+  },
+{{~ end ~}}
+{{~ if Auth ~}}
+  "Authentication": {
+    "Authority": "",
+    "Audience": ""
+  },
+{{~ end ~}}
+{{~ if Cors ~}}
+  "Cors": {
+    "AllowedOrigins": []
+  },
+{{~ end ~}}
+  "AllowedHosts": "*"
+}

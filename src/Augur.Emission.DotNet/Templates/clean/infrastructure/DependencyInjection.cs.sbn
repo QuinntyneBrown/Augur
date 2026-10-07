@@ -1,0 +1,29 @@
+{{~ if Ef ~}}
+using Microsoft.EntityFrameworkCore;
+{{~ end ~}}
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using {{ Name }}.Application.Notes;
+{{~ if Ef ~}}
+using {{ Name }}.Infrastructure.Persistence;
+{{~ else ~}}
+using {{ Name }}.Infrastructure.Notes;
+{{~ end ~}}
+
+namespace {{ Name }}.Infrastructure;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+{{~ if Ef ~}}
+        services.AddDbContext<NotesDbContext>(options => options.{{ UseProvider }}(
+            configuration.GetConnectionString("Default")
+            ?? throw new InvalidOperationException("ConnectionStrings:Default is not configured.")));
+        services.AddScoped<INoteRepository, EfNoteRepository>();
+{{~ else ~}}
+        services.AddSingleton<INoteRepository, InMemoryNoteRepository>();
+{{~ end ~}}
+        return services;
+    }
+}

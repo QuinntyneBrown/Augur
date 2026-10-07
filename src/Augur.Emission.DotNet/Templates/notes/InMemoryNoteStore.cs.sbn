@@ -1,0 +1,18 @@
+using System.Collections.Concurrent;
+
+namespace {{ NotesNamespace }};
+
+/// <summary>Keeps notes in memory for the life of the process.</summary>
+public sealed class InMemoryNoteStore : INoteStore
+{
+    private readonly ConcurrentDictionary<Guid, Note> _notes = new();
+
+    public Task<IReadOnlyList<Note>> ListAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Note>>([.. _notes.Values.OrderBy(n => n.CreatedAt).ThenBy(n => n.Id)]);
+
+    public Task<Note> AddAsync(Note note, CancellationToken cancellationToken)
+    {
+        _notes[note.Id] = note;
+        return Task.FromResult(note);
+    }
+}

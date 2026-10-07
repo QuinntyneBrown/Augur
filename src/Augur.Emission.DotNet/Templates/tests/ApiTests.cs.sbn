@@ -1,0 +1,91 @@
+using System.Net;
+using System.Net.Http.Json;
+{{~ if Auth ~}}
+using Microsoft.AspNetCore.Hosting;
+{{~ end ~}}
+using Microsoft.AspNetCore.Mvc.Testing;
+{{~ if TestsSqlite ~}}
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using {{ DataNamespace }};
+{{~ end ~}}
+
+namespace {{ TestsProject }};
+
+public sealed class ApiTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+{
+    [Fact]
+    public async Task Health_reports_healthy()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync(new Uri("/api/health", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var health = await response.Content.ReadFromJsonAsync<HealthBody>();
+        Assert.Equal("Healthy", health?.Status);
+    }
+{{~ if Auth ~}}
+
+    [Fact]
+    public async Task Notes_require_an_authenticated_user()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync(new Uri("/api/notes", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public void The_api_refuses_to_start_outside_development_without_an_authority()
+    {
+        using var production = factory.WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
+
+        Assert.ThrowsAny<Exception>(() => production.CreateClient());
+    }
+{{~ end ~}}
+{{~ if TestsNotes ~}}
+
+    [Fact]
+    public async Task A_created_note_is_listed()
+    {
+        using var app = WithEmptyStore();
+        using var client = app.CreateClient();
+
+        var created = await client.PostAsJsonAsync(new Uri("/api/notes", UriKind.Relative), new { title = "Ship order 42" });
+        var notes = await client.GetFromJsonAsync<List<NoteBody>>(new Uri("/api/notes", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        Assert.Contains(notes!, note => note.Title == "Ship order 42");
+    }
+
+    [Fact]
+    public async Task A_note_without_a_title_is_rejected()
+    {
+        using var app = WithEmptyStore();
+        using var client = app.CreateClient();
+
+        var response = await client.PostAsJsonAsync(new Uri("/api/notes", UriKind.Relative), new { title = " " });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private WebApplicationFactory<Program> WithEmptyStore()
+    {
+{{~ if TestsSqlite ~}}
+        var database = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
+        var app = factory.WithWebHostBuilder(builder => builder.UseSetting("ConnectionStrings:Default", $"Data Source={database}"));
+        using var scope = app.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<NotesDbContext>().Database.EnsureCreated();
+        return app;
+{{~ else ~}}
+        return factory.WithWebHostBuilder(_ => { });
+{{~ end ~}}
+    }
+
+    private sealed record NoteBody(Guid Id, string Title);
+{{~ end ~}}
+
+    private sealed record HealthBody(string Status);
+}

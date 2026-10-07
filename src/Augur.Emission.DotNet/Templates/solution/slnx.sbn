@@ -1,0 +1,12 @@
+<Solution>
+{{~ if Clean ~}}
+  <Project Path="{{ Name }}.Domain/{{ Name }}.Domain.csproj" />
+  <Project Path="{{ Name }}.Application/{{ Name }}.Application.csproj" />
+  <Project Path="{{ Name }}.Infrastructure/{{ Name }}.Infrastructure.csproj" />
+{{~ end ~}}
+  <Project Path="{{ ApiProject }}/{{ ApiProject }}.csproj" />
+{{~ if Worker ~}}
+  <Project Path="{{ WorkerProject }}/{{ WorkerProject }}.csproj" />
+{{~ end ~}}
+  <Project Path="{{ TestsProject }}/{{ TestsProject }}.csproj" />
+</Solution>

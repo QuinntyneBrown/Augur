@@ -1,0 +1,25 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+{{~ if Cqrs ~}}
+using {{ Name }}.Application.Notes.Commands;
+using {{ Name }}.Application.Notes.Queries;
+{{~ else ~}}
+using {{ Name }}.Application.Notes;
+{{~ end ~}}
+
+namespace {{ Name }}.Application;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddApplication(this IServiceCollection services)
+    {
+        services.TryAddSingleton(TimeProvider.System);
+{{~ if Cqrs ~}}
+        services.AddScoped<CreateNoteHandler>();
+        services.AddScoped<ListNotesHandler>();
+{{~ else ~}}
+        services.AddScoped<NoteService>();
+{{~ end ~}}
+        return services;
+    }
+}

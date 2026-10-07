@@ -1,0 +1,63 @@
+using {{ Name }}.Api;
+{{~ if Auth ~}}
+using {{ Name }}.Api.Authentication;
+{{~ end ~}}
+{{~ if Clean ~}}
+using {{ Name }}.Api.Notes;
+using {{ Name }}.Application;
+using {{ Name }}.Infrastructure;
+{{~ else ~}}
+using {{ NotesNamespace }};
+{{~ end ~}}
+
+var builder = WebApplication.CreateBuilder(args);
+{{~ if Auth ~}}
+if (!AuthenticationStartup.TryConfigure(builder))
+{
+    return 1;
+}
+
+{{~ end ~}}
+{{~ if Cors ~}}
+CorsStartup.Configure(builder);
+{{~ end ~}}
+{{~ if Clean ~}}
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
+{{~ else ~}}
+builder.Services.AddNotes(builder.Configuration);
+{{~ end ~}}
+
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
+{{~ if Fullstack ~}}
+app.UseDefaultFiles();
+app.UseStaticFiles();
+{{~ end ~}}
+{{~ if Cors ~}}
+CorsStartup.Use(app);
+{{~ end ~}}
+{{~ if Auth ~}}
+app.UseAuthentication();
+app.UseAuthorization();
+{{~ end ~}}
+
+app.MapHealthEndpoint();
+app.MapNotesEndpoints();
+{{~ if Fullstack ~}}
+SpaStartup.MapFallback(app);
+{{~ end ~}}
+
+app.Run();
+return 0;
+
+/// <summary>The API's entry point, public so tests can host it with <c>WebApplicationFactory</c>.</summary>
+public partial class Program
+{
+}

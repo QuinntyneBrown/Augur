@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Contoso.Orders.Api/Contoso.Orders.Api.csproj" />
+  <Project Path="Contoso.Orders.Worker/Contoso.Orders.Worker.csproj" />
+  <Project Path="Contoso.Orders.Tests/Contoso.Orders.Tests.csproj" />
+</Solution>

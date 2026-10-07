@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Contoso.Orders.Application/Contoso.Orders.Application.csproj" />
+    <ProjectReference Include="../Contoso.Orders.Infrastructure/Contoso.Orders.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,9 @@
+namespace {{ NotesNamespace }};
+
+/// <summary><c>GET /api/notes</c>: every note, oldest first.</summary>
+public static class ListNotes
+{
+    public static RouteHandlerBuilder Map(IEndpointRouteBuilder notes) =>
+        notes.MapGet("/", async (INoteStore store, CancellationToken cancellationToken) =>
+            Results.Ok(await store.ListAsync(cancellationToken)));
+}

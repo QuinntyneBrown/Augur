@@ -1,0 +1,13 @@
+namespace {{ Name }}.Domain.Notes;
+
+/// <summary>A short note. Replace this sample entity with your own domain model.</summary>
+public sealed class Note
+{
+    public const int MaxTitleLength = 200;
+
+    public Guid Id { get; set; }
+
+    public required string Title { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+}

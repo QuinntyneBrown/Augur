@@ -1,0 +1,18 @@
+using Microsoft.EntityFrameworkCore;
+using {{ DataNamespace }};
+
+namespace {{ NotesNamespace }};
+
+/// <summary>Keeps notes in the database through <see cref="NotesDbContext"/>.</summary>
+public sealed class EfNoteStore(NotesDbContext db) : INoteStore
+{
+    public async Task<IReadOnlyList<Note>> ListAsync(CancellationToken cancellationToken) =>
+        await db.Notes.AsNoTracking().OrderBy(n => n.CreatedAt).ThenBy(n => n.Id).ToListAsync(cancellationToken);
+
+    public async Task<Note> AddAsync(Note note, CancellationToken cancellationToken)
+    {
+        db.Notes.Add(note);
+        await db.SaveChangesAsync(cancellationToken);
+        return note;
+    }
+}

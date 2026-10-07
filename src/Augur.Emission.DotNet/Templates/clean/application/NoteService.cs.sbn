@@ -1,0 +1,15 @@
+using {{ Name }}.Domain.Notes;
+
+namespace {{ Name }}.Application.Notes;
+
+/// <summary>The notes use cases.</summary>
+public sealed class NoteService(INoteRepository repository, TimeProvider time)
+{
+    public Task<IReadOnlyList<Note>> ListAsync(CancellationToken cancellationToken) =>
+        repository.ListAsync(cancellationToken);
+
+    public Task<Note> CreateAsync(string title, CancellationToken cancellationToken) =>
+        repository.AddAsync(
+            new Note { Id = Guid.NewGuid(), Title = title.Trim(), CreatedAt = time.GetUtcNow().UtcDateTime },
+            cancellationToken);
+}

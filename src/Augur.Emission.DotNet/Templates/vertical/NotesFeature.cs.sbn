@@ -1,0 +1,13 @@
+namespace {{ NotesNamespace }};
+
+/// <summary>The notes feature: each slice maps its own endpoint under <c>/api/notes</c>.</summary>
+public static class NotesFeature
+{
+    public static IEndpointRouteBuilder MapNotesEndpoints(this IEndpointRouteBuilder app)
+    {
+        var notes = app.MapGroup("/api/notes");
+        ListNotes.Map(notes);
+        CreateNote.Map(notes);
+        return app;
+    }
+}

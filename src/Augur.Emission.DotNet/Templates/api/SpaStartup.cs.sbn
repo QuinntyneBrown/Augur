@@ -1,0 +1,13 @@
+namespace {{ Name }}.Api;
+
+/// <summary>
+/// Serves the published Angular app from wwwroot. Any path that is not a file and not under /api returns the app's
+/// index page so client-side routes work on reload; unknown /api paths still return 404.
+/// </summary>
+public static class SpaStartup
+{
+    public const string IndexFile = "{{ IndexFile }}";
+
+    public static void MapFallback(WebApplication app) =>
+        app.MapFallbackToFile("{*path:regex(^(?!api(/|$)).*$)}", IndexFile).AllowAnonymous();
+}

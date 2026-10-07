@@ -1,0 +1,28 @@
+namespace Contoso.Orders.Api.Features.Notes;
+
+/// <summary><c>POST /api/notes</c>: a command that adds a note.</summary>
+public static class CreateNote
+{
+    public sealed record Command(string Title);
+
+    public sealed class Handler(INoteStore store, TimeProvider time)
+    {
+        public Task<Note> HandleAsync(Command command, CancellationToken cancellationToken) =>
+            store.AddAsync(
+                new Note { Id = Guid.NewGuid(), Title = command.Title.Trim(), CreatedAt = time.GetUtcNow().UtcDateTime },
+                cancellationToken);
+    }
+
+    public static RouteHandlerBuilder Map(IEndpointRouteBuilder notes) =>
+        notes.MapPost("/", async (CreateNoteRequest request, Handler handler, CancellationToken cancellationToken) =>
+        {
+            var problems = request.Problems();
+            if (problems.Count > 0)
+            {
+                return Results.ValidationProblem(problems);
+            }
+
+            var note = await handler.HandleAsync(new Command(request.Title!), cancellationToken);
+            return Results.Created($"/api/notes/{note.Id}", note);
+        });
+}

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Augur.Emission.DotNet</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Templates/**/*" WithCulture="false" LogicalName="$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\','/'))" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Augur.Emission/Augur.Emission.csproj" />
+  </ItemGroup>
+</Project>

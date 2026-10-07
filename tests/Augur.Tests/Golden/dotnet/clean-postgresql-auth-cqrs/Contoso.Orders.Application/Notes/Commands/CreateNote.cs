@@ -1,0 +1,14 @@
+using Contoso.Orders.Domain.Notes;
+
+namespace Contoso.Orders.Application.Notes.Commands;
+
+/// <summary>Adds a note.</summary>
+public sealed record CreateNoteCommand(string Title);
+
+public sealed class CreateNoteHandler(INoteRepository repository, TimeProvider time)
+{
+    public Task<Note> HandleAsync(CreateNoteCommand command, CancellationToken cancellationToken) =>
+        repository.AddAsync(
+            new Note { Id = Guid.NewGuid(), Title = command.Title.Trim(), CreatedAt = time.GetUtcNow().UtcDateTime },
+            cancellationToken);
+}

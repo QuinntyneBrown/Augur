@@ -1,0 +1,17 @@
+namespace Contoso.Orders.Api.Features.Notes;
+
+/// <summary><c>GET /api/notes</c>: a query for every note, oldest first.</summary>
+public static class ListNotes
+{
+    public sealed record Query;
+
+    public sealed class Handler(INoteStore store)
+    {
+        public Task<IReadOnlyList<Note>> HandleAsync(Query query, CancellationToken cancellationToken) =>
+            store.ListAsync(cancellationToken);
+    }
+
+    public static RouteHandlerBuilder Map(IEndpointRouteBuilder notes) =>
+        notes.MapGet("/", async (Handler handler, CancellationToken cancellationToken) =>
+            Results.Ok(await handler.HandleAsync(new Query(), cancellationToken)));
+}

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="{{ ExtensionsVersion }}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../{{ Name }}.Domain/{{ Name }}.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

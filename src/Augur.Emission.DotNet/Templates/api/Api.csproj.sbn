@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+{{~ if Auth || (Ef && !Clean) ~}}
+
+  <ItemGroup>
+{{~ if Auth ~}}
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="{{ AspNetCoreVersion }}" />
+{{~ end ~}}
+{{~ if Ef && !Clean ~}}
+    <PackageReference Include="{{ ProviderPackage }}" Version="{{ ProviderVersion }}" />
+{{~ end ~}}
+  </ItemGroup>
+{{~ end ~}}
+{{~ if Clean ~}}
+
+  <ItemGroup>
+    <ProjectReference Include="../{{ Name }}.Application/{{ Name }}.Application.csproj" />
+    <ProjectReference Include="../{{ Name }}.Infrastructure/{{ Name }}.Infrastructure.csproj" />
+  </ItemGroup>
+{{~ end ~}}
+{{~ if Fullstack ~}}
+
+  <!-- Publishing builds the Angular workspace in ../web and serves it from wwwroot. -->
+  <PropertyGroup>
+    <WebRoot>$(MSBuildProjectDirectory)/../web</WebRoot>
+  </PropertyGroup>
+
+  <Target Name="BuildAngular" BeforeTargets="ComputeFilesToPublish">
+    <Exec Command="npm ci" WorkingDirectory="$(WebRoot)" />
+    <Exec Command="npm run build -- --configuration production" WorkingDirectory="$(WebRoot)" />
+    <ItemGroup>
+      <AngularFiles Include="$(WebRoot)/dist/{{ AngularProjectName }}/browser/**" />
+      <ResolvedFileToPublish Include="@(AngularFiles)" RelativePath="wwwroot/%(RecursiveDir)%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    </ItemGroup>
+  </Target>
+{{~ end ~}}
+
+</Project>

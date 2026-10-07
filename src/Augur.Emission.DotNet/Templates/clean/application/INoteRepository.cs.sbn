@@ -1,0 +1,11 @@
+using {{ Name }}.Domain.Notes;
+
+namespace {{ Name }}.Application.Notes;
+
+/// <summary>Where notes are kept. Implemented by the infrastructure layer.</summary>
+public interface INoteRepository
+{
+    Task<IReadOnlyList<Note>> ListAsync(CancellationToken cancellationToken);
+
+    Task<Note> AddAsync(Note note, CancellationToken cancellationToken);
+}

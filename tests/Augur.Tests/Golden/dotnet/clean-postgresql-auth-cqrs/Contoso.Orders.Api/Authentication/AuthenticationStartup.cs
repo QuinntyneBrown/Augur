@@ -1,0 +1,57 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+
+namespace Contoso.Orders.Api.Authentication;
+
+/// <summary>The OpenID Connect authority and audience that issue and accept this API's bearer tokens.</summary>
+public sealed class AuthenticationSettings
+{
+    public const string SectionName = "Authentication";
+
+    public string? Authority { get; init; }
+
+    public string? Audience { get; init; }
+}
+
+/// <summary>
+/// Validates JWT bearer tokens and requires an authenticated user on every endpoint not marked anonymous.
+/// Outside Development the API refuses to start until the authority and audience are configured.
+/// </summary>
+public static class AuthenticationStartup
+{
+    public static bool TryConfigure(WebApplicationBuilder builder)
+    {
+        var settings = builder.Configuration.GetSection(AuthenticationSettings.SectionName).Get<AuthenticationSettings>()
+            ?? new AuthenticationSettings();
+        if (!builder.Environment.IsDevelopment())
+        {
+            var missing = new List<string>();
+            if (string.IsNullOrWhiteSpace(settings.Authority))
+            {
+                missing.Add("Authentication:Authority");
+            }
+
+            if (string.IsNullOrWhiteSpace(settings.Audience))
+            {
+                missing.Add("Authentication:Audience");
+            }
+
+            if (missing.Count > 0)
+            {
+                Console.Error.WriteLine($"Missing required configuration: {string.Join(", ", missing)}");
+                return false;
+            }
+        }
+
+        builder.Services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.Authority = settings.Authority;
+                options.Audience = settings.Audience;
+            });
+        builder.Services.AddAuthorizationBuilder()
+            .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+        return true;
+    }
+}

@@ -1,0 +1,27 @@
+{{~ if Ef ~}}
+using Microsoft.EntityFrameworkCore;
+using {{ DataNamespace }};
+
+{{~ end ~}}
+namespace {{ NotesNamespace }};
+
+public static class NotesServices
+{
+    public static IServiceCollection AddNotes(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSingleton(TimeProvider.System);
+{{~ if Ef ~}}
+        services.AddDbContext<NotesDbContext>(options => options.{{ UseProvider }}(
+            configuration.GetConnectionString("Default")
+            ?? throw new InvalidOperationException("ConnectionStrings:Default is not configured.")));
+        services.AddScoped<INoteStore, EfNoteStore>();
+{{~ else ~}}
+        services.AddSingleton<INoteStore, InMemoryNoteStore>();
+{{~ end ~}}
+{{~ if VerticalSlice && Cqrs ~}}
+        services.AddScoped<CreateNote.Handler>();
+        services.AddScoped<ListNotes.Handler>();
+{{~ end ~}}
+        return services;
+    }
+}

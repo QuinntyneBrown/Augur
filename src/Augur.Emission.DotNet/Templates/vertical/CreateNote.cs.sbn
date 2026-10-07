@@ -1,0 +1,20 @@
+namespace {{ NotesNamespace }};
+
+/// <summary><c>POST /api/notes</c>: adds a note.</summary>
+public static class CreateNote
+{
+    public static RouteHandlerBuilder Map(IEndpointRouteBuilder notes) =>
+        notes.MapPost("/", async (CreateNoteRequest request, INoteStore store, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            var problems = request.Problems();
+            if (problems.Count > 0)
+            {
+                return Results.ValidationProblem(problems);
+            }
+
+            var note = await store.AddAsync(
+                new Note { Id = Guid.NewGuid(), Title = request.Title!.Trim(), CreatedAt = time.GetUtcNow().UtcDateTime },
+                cancellationToken);
+            return Results.Created($"/api/notes/{note.Id}", note);
+        });
+}
