@@ -21,7 +21,7 @@ The emitter lives in `Augur.Emission.Angular` and shares `IEmitter`, `EmissionCo
 - **`AngularTemplateGroupSelector`** — maps plan values to groups: `Shell/Material`, `Shell/Plain`, `State/Signals`, `State/NgrxSignalStore`, `Ssr/Enabled`, `Auth/OidcPkce`, and `Common` (always).
 - **`WorkspaceModel`** — rendering model: `ProjectName`, `WorkspaceRoot`, `ApiBaseUrl` (`/api` for `fullstack`, `<TO SUPPLY>` for standalone `angular`), the selected groups, and the exact dependency list.
 - **`NpmPackageCatalog`** — static table of every npm dependency with its exact version. The Angular major version and all package versions are `<TO SUPPLY>` at release time; the release pipeline runs `npm audit --omit=dev --audit-level=high` and regenerates the embedded `package-lock.json` whenever the table changes.
-- **`EmbeddedLockfile`** — static resource `package-lock.json` matching `NpmPackageCatalog` byte-for-byte, copied without rendering.
+- **`EmbeddedLockfile`** — one gzip-compressed `package-lock.json` per dependency set (16 in all), with the project name filled in at emission. See ADR backend/0004.
 - **`BudgetModel`** — the `angular.json` production budgets: initial bundle 500 kB warning / 1 MB error; any component style 4 kB warning / 8 kB error (L2-057).
 
 ### Emitted workspace
