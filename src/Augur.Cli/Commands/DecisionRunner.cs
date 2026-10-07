@@ -4,6 +4,7 @@ using Augur.Core.Decisions;
 using Augur.Core.Intake;
 using Augur.Core.Locking;
 using Augur.Core.Plan;
+using Augur.Oracle.OpenAI;
 using Augur.Oracle.Scripted;
 
 namespace Augur.Cli.Commands;
@@ -32,7 +33,9 @@ internal static class DecisionRunner
         var lockStore = new LockfileStore(run.Paths.Resolve(lockPath), lockPath, catalog);
         var previous = lockStore.Read();
 
-        var oracle = new ReplayingOracle(previous, refresh, offline ? new OfflineOracle() : CreateOracle(run, options));
+        var inner = offline ? new OfflineOracle() : CreateOracle(run, options);
+        using var disposable = inner as IDisposable;
+        var oracle = new ReplayingOracle(previous, refresh, inner);
         var resolverOptions = new ResolverOptions(args.GetValue(options.MinConfidence));
         var resolver = new DecisionResolver(resolverOptions);
         var evaluator = new TreeEvaluator(catalog, oracle, resolver, CreateLowConfidenceHandler(run, options), TimeProvider.System, run.Reporter);
@@ -66,7 +69,13 @@ internal static class DecisionRunner
             return ScriptedOracle.Load(script, run.Paths.Resolve(script));
         }
 
-        return new NoOracle();
+        return new DecisionsApiOracle(
+            new DecisionsApiSettings(
+                run.Host.Env.GetValueOrDefault(DecisionsApiSettings.BaseUrlVariable),
+                run.Host.Env.GetValueOrDefault(DecisionsApiSettings.ApiKeyVariable),
+                run.ParseResult.GetRequiredValue(options.Model),
+                TimeSpan.FromSeconds(run.ParseResult.GetValue(options.Timeout))),
+            run.Reporter);
     }
 
     private static ILowConfidenceHandler CreateLowConfidenceHandler(CommandRun run, DecisionOptions options)

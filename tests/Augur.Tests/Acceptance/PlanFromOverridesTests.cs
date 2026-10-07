@@ -239,13 +239,13 @@ public sealed class PlanFromOverridesTests
     [Fact]
     public async Task Decisions_with_no_source_of_answers_are_reported_as_unresolved()
     {
-        using var cli = SpecIn(new CliRunner()).WithEnv("OPENAI_API_KEY", null);
+        using var cli = SpecIn(new CliRunner());
 
-        var result = await cli.RunAsync("plan", "--spec", "spec.md", "--name", "Contoso.Orders", "--set", "target=dotnet");
+        var result = await cli.RunAsync("plan", "--spec", "spec.md", "--name", "Contoso.Orders", "--set", "target=dotnet", "--offline");
 
         Assert.Equal(3, result.ExitCode);
         Assert.Empty(result.Stdout);
-        Assert.EndsWith("error: unresolved decisions: authentication\n", result.Stderr);
+        Assert.EndsWith("error: offline: no recorded decision for: authentication\n", result.Stderr);
     }
 
     [Fact]

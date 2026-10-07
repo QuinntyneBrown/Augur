@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Augur.Core/Augur.Core.csproj" />
+    <ProjectReference Include="../Augur.Oracle.OpenAI/Augur.Oracle.OpenAI.csproj" />
     <ProjectReference Include="../Augur.Oracle.Scripted/Augur.Oracle.Scripted.csproj" />
   </ItemGroup>
 </Project>

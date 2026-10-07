@@ -81,6 +81,9 @@ public sealed class AnswerScript
 
     public string ToJson() => new JsonObject { ["answers"] = _answers.DeepClone() }.ToJsonString();
 
+    /// <summary>A copy of the raw result scripted for <paramref name="id"/>, or <c>null</c>.</summary>
+    public JsonObject? AnswerFor(string id) => _answers[id]?.DeepClone().AsObject();
+
     /// <summary>Writes the script into the runner's working directory and returns its relative path.</summary>
     public string WriteTo(CliRunner cli, string relativePath = "answers.json")
     {

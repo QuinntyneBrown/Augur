@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Augur.Tests", "tests\Augur.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Augur.Oracle.Scripted", "src\Augur.Oracle.Scripted\Augur.Oracle.Scripted.csproj", "{36B55E35-20FC-433D-A9B7-B0F9BA2C2B47}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Augur.Oracle.OpenAI", "src\Augur.Oracle.OpenAI\Augur.Oracle.OpenAI.csproj", "{6B7226AD-2C31-454F-B4A3-C4762B4159F6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,6 +75,18 @@ Global
 		{36B55E35-20FC-433D-A9B7-B0F9BA2C2B47}.Release|x64.Build.0 = Release|Any CPU
 		{36B55E35-20FC-433D-A9B7-B0F9BA2C2B47}.Release|x86.ActiveCfg = Release|Any CPU
 		{36B55E35-20FC-433D-A9B7-B0F9BA2C2B47}.Release|x86.Build.0 = Release|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Debug|x64.Build.0 = Debug|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Debug|x86.Build.0 = Debug|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Release|x64.ActiveCfg = Release|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Release|x64.Build.0 = Release|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Release|x86.ActiveCfg = Release|Any CPU
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -82,5 +96,6 @@ Global
 		{E8E1F74F-481D-499D-BE70-63D90173391A} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{1152081F-8B59-46CB-A0E3-445F09F9CED2} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{36B55E35-20FC-433D-A9B7-B0F9BA2C2B47} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{6B7226AD-2C31-454F-B4A3-C4762B4159F6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
