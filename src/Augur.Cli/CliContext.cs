@@ -23,6 +23,7 @@ internal sealed class CliContext(ConsoleHost host)
         var run = new CommandRun(Host, parseResult, reporter, token);
         try
         {
+            token.ThrowIfCancellationRequested();
             return (int)await body(run);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)

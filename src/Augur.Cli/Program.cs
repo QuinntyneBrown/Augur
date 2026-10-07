@@ -9,6 +9,7 @@ public static class Program
         var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         await using var stdout = new StreamWriter(Console.OpenStandardOutput(), utf8) { NewLine = "\n", AutoFlush = true };
         await using var stderr = new StreamWriter(Console.OpenStandardError(), utf8) { NewLine = "\n", AutoFlush = true };
+        using var cancellation = new CancellationSource();
         var env = Environment.GetEnvironmentVariables()
             .Cast<System.Collections.DictionaryEntry>()
             .ToDictionary(e => (string)e.Key, e => (string?)e.Value, StringComparer.Ordinal);
@@ -21,7 +22,7 @@ public static class Program
             Environment.CurrentDirectory,
             StdinIsTerminal: !Console.IsInputRedirected,
             StderrIsTerminal: !Console.IsErrorRedirected,
-            CancellationToken.None);
+            cancellation.Token);
         return await RunAsync(host);
     }
 
