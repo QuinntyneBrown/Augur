@@ -48,6 +48,14 @@ public sealed class EmittedBuild : IDisposable
         solution.Append("</Solution>\n");
         var path = Path.Combine(Root, $"{name}.slnx");
         File.WriteAllText(path, solution.ToString());
+
+        // The SDK is chosen from the working directory, so the aggregate needs the same global.json the emitted solutions carry.
+        var globalJson = Directory.EnumerateFiles(Root, "global.json", SearchOption.AllDirectories).FirstOrDefault();
+        if (globalJson is not null)
+        {
+            File.Copy(globalJson, Path.Combine(Root, "global.json"), overwrite: true);
+        }
+
         return path;
     }
 

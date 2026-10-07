@@ -42,14 +42,16 @@ a {
   color: var(--app-accent);
 }
 
+/* A visible focus indicator on every interactive element, even where a component library removes it. */
 :focus-visible {
-  outline: 3px solid var(--app-focus);
+  outline: 3px solid var(--app-focus) !important;
   outline-offset: 2px;
 }
 
-h1:focus,
-main:focus {
-  outline: none;
+/* Headings and the main region receive focus only to announce a page change; they are not interactive. */
+[tabindex="-1"]:focus,
+[tabindex="-1"]:focus-visible {
+  outline: none !important;
 }
 
 .visually-hidden {

@@ -73,6 +73,17 @@ internal static partial class Npm
         }
     }
 
+    /// <summary>Installs and builds a workspace for production and returns the folder of browser files.</summary>
+    public static async Task<string> InstallAndBuildAsync(string workspace)
+    {
+        var install = await RunAsync("ci --no-audit --no-fund", workspace, TimeSpan.FromMinutes(10));
+        Assert.True(install.ExitCode == 0, install.Output);
+        var built = await RunAsync("run build -- --configuration production", workspace, TimeSpan.FromMinutes(10));
+        Assert.True(built.ExitCode == 0, built.Output);
+        var dist = Directory.GetDirectories(Path.Combine(workspace, "dist")).Single();
+        return Path.Combine(dist, "browser");
+    }
+
     public static Task<ProcessResult> RunAsync(string arguments, string workingDirectory, TimeSpan timeout) =>
         OperatingSystem.IsWindows()
             ? EmittedBuild.RunAsync("cmd.exe", $"/c npm {arguments}", workingDirectory, timeout, Environment())
