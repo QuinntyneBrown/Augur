@@ -1,4 +1,3 @@
-using System.CommandLine;
 using System.Text;
 
 namespace Augur.Cli;
@@ -26,36 +25,6 @@ public static class Program
         return await RunAsync(host);
     }
 
-    public static async Task<int> RunAsync(ConsoleHost host)
-    {
-        var root = new RootCommand("Augur decides what to generate with the OpenAI Decisions API, then emits code deterministically.");
-        root.Directives.Clear();
-        foreach (var version in root.Options.OfType<VersionOption>())
-        {
-            version.Action = new VersionAction();
-        }
-
-        root.SetAction(_ =>
-        {
-            WriteHelp(root, [], host.Stderr);
-            return 2;
-        });
-
-        var parseResult = root.Parse(host.Args, ParserConfiguration);
-        return await parseResult.InvokeAsync(Invocation(host.Stdout, host.Stderr), host.Token);
-    }
-
-    private static ParserConfiguration ParserConfiguration => new() { ResponseFileTokenReplacer = null };
-
-    private static InvocationConfiguration Invocation(TextWriter output, TextWriter error) => new()
-    {
-        Output = output,
-        Error = error,
-        ProcessTerminationTimeout = null,
-        EnableDefaultExceptionHandler = false,
-    };
-
-    /// <summary>Writes the help for <paramref name="commandPath"/> to <paramref name="writer"/> (the built-in help action only targets stdout).</summary>
-    private static void WriteHelp(RootCommand root, string[] commandPath, TextWriter writer) =>
-        root.Parse([.. commandPath, "--help"], ParserConfiguration).Invoke(Invocation(writer, writer));
+    /// <summary>Runs one augur invocation against <paramref name="host"/> and returns the process exit code.</summary>
+    public static Task<int> RunAsync(ConsoleHost host) => CommandLine.RunAsync(host);
 }

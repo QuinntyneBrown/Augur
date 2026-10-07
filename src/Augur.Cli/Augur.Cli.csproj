@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>Augur.Cli</RootNamespace>
+    <AssemblyName>augur</AssemblyName>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>augur</ToolCommandName>
     <PackageId>Augur.Cli</PackageId>
