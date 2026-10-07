@@ -24,12 +24,25 @@ internal static class CliOptions
         HelpName = "path",
     };
 
-    public static Option<string[]> Image() => new("--image")
+    public const int MaxImages = 4;
+
+    public static Option<string[]> Image()
     {
-        Description = "PNG, JPEG, or WEBP image to send with the specification. Repeat up to 4 times.",
-        HelpName = "path",
-        Arity = ArgumentArity.OneOrMore,
-    };
+        var option = new Option<string[]>("--image")
+        {
+            Description = "PNG, JPEG, or WEBP image to send with the specification. Repeat up to 4 times.",
+            HelpName = "path",
+            Arity = ArgumentArity.OneOrMore,
+        };
+        option.Validators.Add(result =>
+        {
+            if (result.Tokens.Count > MaxImages)
+            {
+                result.AddError($"at most {MaxImages} images are allowed");
+            }
+        });
+        return option;
+    }
 
     public static Option<string> Name() => new("--name")
     {
@@ -76,11 +89,22 @@ internal static class CliOptions
         HelpName = "default|prompt|fail",
     }.AcceptOnlyFromAmong("default", "prompt", "fail");
 
-    public static Option<double?> MinConfidence() => new("--min-confidence")
+    public static Option<double?> MinConfidence()
     {
-        Description = "Minimum confidence (0 to 1) for choice and score decisions, replacing the catalog value.",
-        HelpName = "value",
-    };
+        var option = new Option<double?>("--min-confidence")
+        {
+            Description = "Minimum confidence (0 to 1) for choice and score decisions, replacing the catalog value.",
+            HelpName = "value",
+        };
+        option.Validators.Add(result =>
+        {
+            if (result.GetValueOrDefault<double?>() is { } value && (value < 0 || value > 1 || double.IsNaN(value)))
+            {
+                result.AddError("--min-confidence must be between 0 and 1");
+            }
+        });
+        return option;
+    }
 
     public static Option<string> Model() => new("--model")
     {
@@ -89,12 +113,23 @@ internal static class CliOptions
         HelpName = "model",
     };
 
-    public static Option<int> Timeout() => new("--timeout")
+    public static Option<int> Timeout()
     {
-        Description = "Per-request timeout for the Decisions API, in seconds (1 to 300).",
-        DefaultValueFactory = _ => DefaultTimeoutSeconds,
-        HelpName = "seconds",
-    };
+        var option = new Option<int>("--timeout")
+        {
+            Description = "Per-request timeout for the Decisions API, in seconds (1 to 300).",
+            DefaultValueFactory = _ => DefaultTimeoutSeconds,
+            HelpName = "seconds",
+        };
+        option.Validators.Add(result =>
+        {
+            if (result.GetValueOrDefault<int>() is < 1 or > 300)
+            {
+                result.AddError("--timeout must be between 1 and 300 seconds");
+            }
+        });
+        return option;
+    }
 
     public static Option<string> OutFile() => new("--out")
     {
