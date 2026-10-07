@@ -9,5 +9,7 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
     <PackageVersion Include="JsonSchema.Net" Version="9.4.0" />
     <PackageVersion Include="Scriban" Version="7.5.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.63.0" />
+    <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.13.0" />
   </ItemGroup>
 </Project>

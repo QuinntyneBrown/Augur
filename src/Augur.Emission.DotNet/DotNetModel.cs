@@ -94,19 +94,7 @@ public sealed record DotNetModel(
 
     public string XunitRunnerVersion => PackageVersions.XunitRunner;
 
-    public int HttpsPort => 7000 + (StableHash(Name) % 1000);
+    public int HttpsPort { get; init; }
 
-    public int HttpPort => 5000 + (StableHash(Name) % 1000);
-
-    /// <summary>A hash that is the same on every machine and run, unlike <see cref="string.GetHashCode()"/>.</summary>
-    private static int StableHash(string text)
-    {
-        var hash = 17;
-        foreach (var c in text)
-        {
-            hash = unchecked((hash * 31) + c);
-        }
-
-        return Math.Abs(hash % 100_000);
-    }
+    public int HttpPort { get; init; }
 }

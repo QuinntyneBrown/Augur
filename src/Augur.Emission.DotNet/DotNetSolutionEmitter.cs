@@ -22,12 +22,17 @@ public sealed class DotNetSolutionEmitter : IEmitter
             context.IsTrue("domain-complexity"),
             context.Target == "fullstack",
             context.AngularProjectName,
-            context.IsTrue("server-side-rendering"));
+            context.IsTrue("server-side-rendering"))
+        {
+            HttpsPort = DevelopmentPorts.Https(context.SolutionName),
+            HttpPort = DevelopmentPorts.Http(context.SolutionName),
+        };
 
         files.Add($"{model.Name}.slnx", Render("solution/slnx.sbn", model));
         files.Add("Directory.Build.props", Render("solution/Directory.Build.props.sbn", model));
-        files.AddBinary(".editorconfig", _templates.Static("solution/editorconfig"));
-        files.AddBinary(".gitignore", _templates.Static("solution/gitignore"));
+        files.Add(".editorconfig", System.Text.Encoding.UTF8.GetString(_templates.Static("solution/editorconfig")));
+        files.Add(".gitignore", System.Text.Encoding.UTF8.GetString(_templates.Static("solution/gitignore")));
+        files.Add("global.json", System.Text.Encoding.UTF8.GetString(_templates.Static("solution/global.json")));
 
         AddApi(files, model);
         if (model.Clean)

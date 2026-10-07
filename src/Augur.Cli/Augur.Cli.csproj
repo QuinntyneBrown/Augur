@@ -15,6 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Augur.Tests" />
+    <InternalsVisibleTo Include="Augur.IntegrationTests" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine" />
@@ -22,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="../Augur.Core/Augur.Core.csproj" />
     <ProjectReference Include="../Augur.Emission/Augur.Emission.csproj" />
+    <ProjectReference Include="../Augur.Emission.Angular/Augur.Emission.Angular.csproj" />
     <ProjectReference Include="../Augur.Emission.DotNet/Augur.Emission.DotNet.csproj" />
     <ProjectReference Include="../Augur.Oracle.OpenAI/Augur.Oracle.OpenAI.csproj" />
     <ProjectReference Include="../Augur.Oracle.Scripted/Augur.Oracle.Scripted.csproj" />
