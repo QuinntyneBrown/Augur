@@ -19,7 +19,7 @@ public sealed class InstalledToolTests
         Assert.Equal(0, version.ExitCode);
         Assert.Matches(@"^augur \d+\.\d+\.\d+ \(catalog 2\)\r?\n$", version.Stdout);
 
-        var uninstall = await EmittedBuild.RunAsync("dotnet", $"tool uninstall Augur.Cli --tool-path \"{tool.ToolPath}\"", tool.Root, TimeSpan.FromMinutes(2));
+        var uninstall = await EmittedBuild.RunAsync("dotnet", $"tool uninstall Augur.Cli --tool-path \"{tool.ToolPath}\"", AppContext.BaseDirectory, TimeSpan.FromMinutes(2));
         Assert.Equal(0, uninstall.ExitCode);
         Assert.False(File.Exists(tool.Executable), "the augur command is still present after uninstalling");
     }

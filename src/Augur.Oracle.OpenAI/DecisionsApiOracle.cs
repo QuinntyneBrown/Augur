@@ -38,6 +38,7 @@ public sealed class DecisionsApiOracle(DecisionsApiSettings settings, IReporter 
     private HttpClient? _client;
     private Uri? _endpoint;
     private string? _apiKey;
+    private (SpecificationInput Input, byte[] Json)? _encodedInput;
 
     public int ApiRequests { get; private set; }
 
@@ -51,7 +52,12 @@ public sealed class DecisionsApiOracle(DecisionsApiSettings settings, IReporter 
             Connect(input);
         }
 
-        var body = DecisionsRequestBuilder.Build(input, requests, settings.Model);
+        if (_encodedInput?.Input != input)
+        {
+            _encodedInput = (input, DecisionsRequestBuilder.Input(input));
+        }
+
+        var body = DecisionsRequestBuilder.Build(_encodedInput.Value.Json, requests, settings.Model);
         ApiRequests++;
         var (responseBody, requestId) = await SendWithRetriesAsync(body, cancellationToken);
         return DecisionsResponseParser.Parse(responseBody, requests, settings.Model, requestId);
@@ -78,7 +84,7 @@ public sealed class DecisionsApiOracle(DecisionsApiSettings settings, IReporter 
         };
     }
 
-    private async Task<(string Body, string? RequestId)> SendWithRetriesAsync(byte[] body, CancellationToken cancellationToken)
+    private async Task<(string Body, string? RequestId)> SendWithRetriesAsync(IReadOnlyList<ReadOnlyMemory<byte>> body, CancellationToken cancellationToken)
     {
         for (var attempt = 1; ; attempt++)
         {
@@ -97,13 +103,13 @@ public sealed class DecisionsApiOracle(DecisionsApiSettings settings, IReporter 
         }
     }
 
-    private async Task<AttemptOutcome> SendOnceAsync(byte[] body, int attempt, CancellationToken cancellationToken)
+    private async Task<AttemptOutcome> SendOnceAsync(IReadOnlyList<ReadOnlyMemory<byte>> body, int attempt, CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(settings.AttemptTimeout);
         using var request = new HttpRequestMessage(HttpMethod.Post, _endpoint)
         {
-            Content = new ByteArrayContent(body) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } },
+            Content = new SegmentsContent(body) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } },
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
 
@@ -199,5 +205,26 @@ public static class BaseUrlPolicy
         }
 
         return uri;
+    }
+}
+
+/// <summary>A request body made of byte segments written in order, so large shared parts are never copied.</summary>
+internal sealed class SegmentsContent(IReadOnlyList<ReadOnlyMemory<byte>> segments) : HttpContent
+{
+    protected override async Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context) =>
+        await SerializeToStreamAsync(stream, context, CancellationToken.None);
+
+    protected override async Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context, CancellationToken cancellationToken)
+    {
+        foreach (var segment in segments)
+        {
+            await stream.WriteAsync(segment, cancellationToken);
+        }
+    }
+
+    protected override bool TryComputeLength(out long length)
+    {
+        length = segments.Sum(s => (long)s.Length);
+        return true;
     }
 }

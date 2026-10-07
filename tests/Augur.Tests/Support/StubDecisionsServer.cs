@@ -37,13 +37,18 @@ public sealed class StubDecisionsServer : IAsyncDisposable
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.Logging.ClearProviders();
-        builder.WebHost.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, 0, listen =>
+        builder.WebHost.ConfigureKestrel(kestrel =>
+        {
+            // The largest valid request (a 256 KiB spec and four 10 MiB images, base64-encoded) is about 56 MB.
+            kestrel.Limits.MaxRequestBodySize = null;
+            kestrel.Listen(IPAddress.Loopback, 0, listen =>
         {
             if (untrustedHttps)
             {
                 listen.UseHttps(SelfSignedCertificate());
             }
-        }));
+        });
+        });
         var app = builder.Build();
         var server = new StubDecisionsServer(app, handler);
         app.MapPost("/v1/decisions", server.HandleAsync);

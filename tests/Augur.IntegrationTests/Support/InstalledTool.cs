@@ -21,12 +21,14 @@ public sealed class InstalledTool : IDisposable
         var tool = new InstalledTool(Path.Combine(Path.GetTempPath(), "augur-tool", Guid.NewGuid().ToString("N")));
         Directory.CreateDirectory(tool.Root);
         var feed = Path.Combine(tool.Root, "feed");
-        var project = Path.Combine(RepositoryRoot(), "src", "Augur.Cli", "Augur.Cli.csproj");
+        var repository = RepositoryRoot();
+        var project = Path.Combine(repository, "src", "Augur.Cli", "Augur.Cli.csproj");
 
-        var pack = await EmittedBuild.RunAsync("dotnet", $"pack \"{project}\" -c Release -o \"{feed}\"", tool.Root, TimeSpan.FromMinutes(10));
+        // Pack from the repository root so its global.json picks the SDK.
+        var pack = await EmittedBuild.RunAsync("dotnet", $"pack \"{project}\" -c Release -o \"{feed}\"", repository, TimeSpan.FromMinutes(10));
         Assert.True(pack.ExitCode == 0, pack.Output);
         var install = await EmittedBuild.RunAsync(
-            "dotnet", $"tool install Augur.Cli --tool-path \"{tool.ToolPath}\" --add-source \"{feed}\"", tool.Root, TimeSpan.FromMinutes(5));
+            "dotnet", $"tool install Augur.Cli --tool-path \"{tool.ToolPath}\" --add-source \"{feed}\"", repository, TimeSpan.FromMinutes(5));
         Assert.True(install.ExitCode == 0, install.Output);
         return tool;
     }

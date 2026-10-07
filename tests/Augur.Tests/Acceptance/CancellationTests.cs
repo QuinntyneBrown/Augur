@@ -28,10 +28,17 @@ public sealed class CancellationDuringRequestTests
         using var cli = new CliRunner().WithEnv("OPENAI_API_KEY", "sk-test-KEY456").WithEnv("AUGUR_OPENAI_BASE_URL", stub.BaseUrl);
         cli.WriteFile("spec.md", "Build an order tracking API.\n");
         cli.WriteFile("decisions.json", "{ \"lockfileVersion\": 1, \"catalogVersion\": 2, \"inputHash\": \"previous\", \"entries\": [] }\n");
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
-        var clock = System.Diagnostics.Stopwatch.StartNew();
+        using var cancellation = new CancellationTokenSource();
 
-        var result = await cli.RunAsync(["plan", "--spec", "spec.md", "--name", "Contoso.Orders", "--out", "plan.json"], stdin: null, cancellation.Token);
+        var run = cli.RunAsync(["plan", "--spec", "spec.md", "--name", "Contoso.Orders", "--out", "plan.json"], stdin: null, cancellation.Token);
+        while (stub.Requests.Count == 0 && !run.IsCompleted)
+        {
+            await Task.Delay(20);
+        }
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        await cancellation.CancelAsync();
+        var result = await run;
 
         Assert.Equal(130, result.ExitCode);
         Assert.True(clock.Elapsed < TimeSpan.FromSeconds(2), $"took {clock.Elapsed}");
