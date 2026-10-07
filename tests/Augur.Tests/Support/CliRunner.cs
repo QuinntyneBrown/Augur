@@ -20,6 +20,9 @@ public sealed class CliRunner : IDisposable
 
     public bool StderrIsTerminal { get; set; }
 
+    /// <summary>Wraps the emitter for fault injection.</summary>
+    public Func<Augur.Emission.IEmitter, Augur.Emission.IEmitter>? EmitterDecorator { get; set; }
+
     public CliRunner WithEnv(string name, string? value)
     {
         _env[name] = value;
@@ -66,7 +69,10 @@ public sealed class CliRunner : IDisposable
             Cwd: WorkingDirectory,
             StdinIsTerminal: StdinIsTerminal,
             StderrIsTerminal: StderrIsTerminal,
-            Token: token);
+            Token: token)
+        {
+            EmitterDecorator = EmitterDecorator,
+        };
         var exitCode = await Program.RunAsync(host);
         return new CliResult(exitCode, stdout.ToString(), stderr.ToString());
     }

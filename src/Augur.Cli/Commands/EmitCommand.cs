@@ -2,6 +2,7 @@ using System.CommandLine;
 using Augur.Core;
 using Augur.Core.Catalog;
 using Augur.Core.Plan;
+using Augur.Emission;
 
 namespace Augur.Cli.Commands;
 
@@ -27,8 +28,23 @@ internal sealed class EmitCommand : Command
 
     private Task<ExitCode> RunAsync(CommandRun run)
     {
-        var planPath = run.ParseResult.GetRequiredValue(Plan);
-        _ = PlanReader.Read(planPath, run.Paths.Resolve(planPath), DecisionCatalog.BuiltIn);
-        throw new NotImplementedException("'emit' is not implemented yet");
+        var args = run.ParseResult;
+        var planPath = args.GetRequiredValue(Plan);
+        var plan = PlanReader.Read(planPath, run.Paths.Resolve(planPath), DecisionCatalog.BuiltIn);
+        var outPath = args.GetRequiredValue(Out);
+        run.Token.ThrowIfCancellationRequested();
+
+        var result = new EmissionPipeline(Emitters.Create(run.Host))
+            .Emit(plan, run.Paths.Resolve(outPath), outPath, args.GetValue(Force), args.GetValue(DryRun));
+        if (args.GetValue(DryRun))
+        {
+            run.WriteStdout(string.Concat(result.DryRunListing.Select(line => line + "\n")));
+        }
+        else
+        {
+            run.Reporter.Info(RunSummary.Render(null, 0, run.Clock.Elapsed, result.FilesWritten));
+        }
+
+        return Task.FromResult(ExitCode.Success);
     }
 }

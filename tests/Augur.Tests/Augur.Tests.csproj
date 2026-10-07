@@ -22,5 +22,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Augur.Cli/Augur.Cli.csproj" />
     <ProjectReference Include="../../src/Augur.Core/Augur.Core.csproj" />
+    <ProjectReference Include="../../src/Augur.Emission/Augur.Emission.csproj" />
   </ItemGroup>
 </Project>
