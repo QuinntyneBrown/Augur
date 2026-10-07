@@ -2,6 +2,7 @@ using Augur.Core;
 using Augur.Core.Catalog;
 using Augur.Core.Decisions;
 using Augur.Core.Intake;
+using Augur.Core.Locking;
 using Augur.Core.Plan;
 using Augur.Oracle.Scripted;
 
@@ -13,7 +14,7 @@ internal sealed record DecisionRunResult(SpecificationInput Input, SolutionName 
 /// <summary>Reads the inputs named by <see cref="DecisionOptions"/>, evaluates the decision tree, and builds the plan.</summary>
 internal static class DecisionRunner
 {
-    public static async Task<DecisionRunResult> RunAsync(CommandRun run, DecisionOptions options)
+    public static async Task<DecisionRunResult> RunAsync(CommandRun run, DecisionOptions options, bool writeLockfile = true)
     {
         var catalog = DecisionCatalog.BuiltIn;
         var args = run.ParseResult;
@@ -22,10 +23,18 @@ internal static class DecisionRunner
         var input = new SpecificationReader(run.Paths, run.Host.Stdin)
             .Read(args.GetRequiredValue(options.Spec), args.GetValue(options.Image) ?? []);
 
+        var lockPath = args.GetRequiredValue(options.Lock);
+        var lockStore = new LockfileStore(run.Paths.Resolve(lockPath), lockPath, catalog);
+
         var oracle = CreateOracle(run, options);
-        var resolver = new DecisionResolver(new ResolverOptions(args.GetValue(options.MinConfidence)));
+        var resolverOptions = new ResolverOptions(args.GetValue(options.MinConfidence));
+        var resolver = new DecisionResolver(resolverOptions);
         var evaluator = new TreeEvaluator(catalog, oracle, resolver, CreateLowConfidenceHandler(run, options), TimeProvider.System, run.Reporter);
         var state = await evaluator.EvaluateAsync(input, overrides, run.Token);
+        if (writeLockfile)
+        {
+            lockStore.Write(Lockfile.From(state, input.InputHash, catalog, resolverOptions));
+        }
 
         return new DecisionRunResult(
             input,
