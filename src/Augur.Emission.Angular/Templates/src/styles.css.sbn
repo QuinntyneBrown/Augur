@@ -1,0 +1,270 @@
+/* Global styles. Breakpoints: small 576px, medium 768px, large 992px, extra large 1200px. */
+
+:root {
+  --app-text: #1f2937;
+  --app-muted: #4b5563;
+  --app-surface: #ffffff;
+  --app-surface-alt: #f3f4f6;
+  --app-accent: #1d4ed8;
+  --app-accent-text: #ffffff;
+  --app-focus: #b45309;
+  --app-max-width: 72rem;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--app-text);
+  background: var(--app-surface);
+  overflow-wrap: anywhere;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+a {
+  color: var(--app-accent);
+}
+
+:focus-visible {
+  outline: 3px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+h1:focus,
+main:focus {
+  outline: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  color: var(--app-accent-text);
+  background: var(--app-accent);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 56px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+}
+
+.app-main {
+  display: block;
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.app-footer {
+  padding: 1rem;
+  color: var(--app-muted);
+  border-top: 1px solid var(--app-surface-alt);
+}
+
+.app-footer p {
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  color: var(--app-accent-text);
+  background: var(--app-accent);
+  border: 0;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+@media (min-width: 992px) {
+  .app-main {
+    padding: 2rem;
+  }
+}
+{{~ if Material ~}}
+
+/* Material shell */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-header .mat-toolbar {
+  gap: 0.5rem;
+}
+
+.menu-button.mat-mdc-icon-button {
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+}
+
+.app-body {
+  flex: 1;
+}
+
+.app-nav {
+  width: 15rem;
+}
+
+.app-nav .mat-mdc-list-item {
+  min-height: 48px;
+}
+{{~ else ~}}
+
+/* Plain shell: navigation collapses behind the menu button below 768px. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-header {
+  padding: 0 1rem;
+  color: var(--app-accent-text);
+  background: var(--app-accent);
+}
+
+.app-header .brand {
+  color: var(--app-accent-text);
+}
+
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-left: auto;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 2px solid currentColor;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.app-nav {
+  display: none;
+  background: var(--app-surface-alt);
+}
+
+.app-nav.open {
+  display: block;
+}
+
+.app-nav ul {
+  margin: 0;
+  padding: 0.5rem 0;
+  list-style: none;
+}
+
+.app-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 1rem;
+  color: var(--app-text);
+  text-decoration: none;
+}
+
+.app-nav a.active {
+  font-weight: 600;
+  color: var(--app-accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-nav a {
+    transition: background-color 150ms ease-in-out;
+  }
+}
+
+.app-nav a:hover {
+  background: #e5e7eb;
+}
+
+@media (min-width: 768px) {
+  .menu-button {
+    display: none;
+  }
+
+  .app-body {
+    flex-direction: row;
+  }
+
+  .app-nav,
+  .app-nav.open {
+    display: block;
+    flex: 0 0 14rem;
+  }
+
+  .app-content {
+    flex: 1;
+    min-width: 0;
+  }
+}
+{{~ end ~}}

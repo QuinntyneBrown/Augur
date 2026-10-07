@@ -1,0 +1,52 @@
+<div class="app-shell">
+  <a class="skip-link" href="#main" (click)="skipToMain($event)">Skip to main content</a>
+  <header class="app-header">
+    <mat-toolbar>
+      @if (!wide()) {
+        <button
+          mat-icon-button
+          type="button"
+          class="menu-button"
+          aria-label="Menu"
+          aria-controls="main-nav"
+          [attr.aria-expanded]="menuOpen()"
+          (click)="toggleMenu()"
+        >
+          <svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24">
+            <path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      }
+      <a class="brand" routerLink="/">Contoso Orders</a>
+    </mat-toolbar>
+  </header>
+  <mat-sidenav-container class="app-body">
+    <mat-sidenav
+      id="main-nav"
+      class="app-nav"
+      [mode]="wide() ? 'side' : 'over'"
+      [opened]="wide() || menuOpen()"
+      (closedStart)="closeMenu()"
+    >
+      <nav aria-label="Main">
+        <mat-nav-list>
+          <a mat-list-item routerLink="/" routerLinkActive #home="routerLinkActive" [activated]="home.isActive" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">Home</a>
+          <a mat-list-item routerLink="/notes" routerLinkActive #notes="routerLinkActive" [activated]="notes.isActive" ariaCurrentWhenActive="page">Notes</a>
+          @if (auth.signedIn()) {
+            <a mat-list-item routerLink="/sign-out" routerLinkActive #signOut="routerLinkActive" [activated]="signOut.isActive" ariaCurrentWhenActive="page">Sign out</a>
+          } @else {
+            <a mat-list-item routerLink="/sign-in" routerLinkActive #signIn="routerLinkActive" [activated]="signIn.isActive" ariaCurrentWhenActive="page">Sign in</a>
+          }
+        </mat-nav-list>
+      </nav>
+    </mat-sidenav>
+    <mat-sidenav-content>
+      <main id="main" class="app-main" tabindex="-1">
+        <router-outlet />
+      </main>
+      <footer class="app-footer">
+        <p>Contoso Orders</p>
+      </footer>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

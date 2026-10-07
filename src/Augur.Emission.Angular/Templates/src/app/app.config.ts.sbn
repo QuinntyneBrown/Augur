@@ -1,0 +1,31 @@
+import { provideHttpClient, withFetch{{ if Auth }}, withInterceptors{{ end }} } from '@angular/common/http';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners{{ if Auth }}, inject, provideAppInitializer{{ end }} } from '@angular/core';
+{{~ if Ssr ~}}
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+{{~ end ~}}
+import { provideRouter } from '@angular/router';
+{{~ if Auth ~}}
+import { provideOAuthClient } from 'angular-oauth2-oidc';
+{{~ end ~}}
+
+import { routes } from './app.routes';
+{{~ if Auth ~}}
+import { authInterceptor } from './auth/auth.interceptor';
+import { AuthService, provideAuthStorage } from './auth/auth.service';
+{{~ end ~}}
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes),
+    provideHttpClient(withFetch(){{ if Auth }}, withInterceptors([authInterceptor]){{ end }}),
+{{~ if Ssr ~}}
+    provideClientHydration(withEventReplay()),
+{{~ end ~}}
+{{~ if Auth ~}}
+    provideOAuthClient(),
+    provideAuthStorage(),
+    provideAppInitializer(() => inject(AuthService).initialize()),
+{{~ end ~}}
+  ],
+};

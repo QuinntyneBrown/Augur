@@ -1,0 +1,13 @@
+/**
+ * Settings the app reads at runtime. None of them is a secret: this file ships to every browser.
+ */
+export const environment = {
+  /** Requests under this base URL go to the app's own API and carry the user's access token. */
+  apiBaseUrl: '/api',
+  auth: {
+    /** The OpenID Connect authority (issuer) that signs users in, for example https://login.example.com. */
+    authority: '',
+    /** The public client ID registered with the authority for this app. There is no client secret. */
+    clientId: '',
+  },
+};

@@ -1,0 +1,72 @@
+import { Component, DOCUMENT, inject } from '@angular/core';
+{{~ if Material ~}}
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
+import { MatListModule } from '@angular/material/list';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatToolbarModule } from '@angular/material/toolbar';
+{{~ else ~}}
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+{{~ end ~}}
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter{{ if Material }}, map{{ end }} } from 'rxjs';
+{{~ if Auth ~}}
+import { AuthService } from './auth/auth.service';
+{{~ end ~}}
+import { RouteFocus } from './core/route-focus';
+{{~ if SignalStore ~}}
+import { AppStore } from './state/app-store';
+{{~ else ~}}
+import { AppState } from './state/app-state';
+{{~ end ~}}
+
+/** The app shell: skip link, header, navigation, main content, and footer. */
+@Component({
+  selector: 'app-root',
+  imports: [RouterOutlet, RouterLink, RouterLinkActive{{ if Material }}, MatToolbarModule, MatSidenavModule, MatListModule, MatButtonModule{{ end }}],
+  templateUrl: './app.html',
+})
+export class App {
+{{~ if SignalStore ~}}
+  private readonly state = inject(AppStore);
+{{~ else ~}}
+  private readonly state = inject(AppState);
+{{~ end ~}}
+  private readonly document = inject(DOCUMENT);
+  protected readonly menuOpen = this.state.menuOpen;
+{{~ if Auth ~}}
+  protected readonly auth = inject(AuthService);
+{{~ end ~}}
+{{~ if Material ~}}
+
+  /** True at 768px and wider, where the navigation stays open beside the content. */
+  protected readonly wide = toSignal(
+    inject(BreakpointObserver).observe('(min-width: 768px)').pipe(map((state) => state.matches)),
+    { initialValue: false },
+  );
+{{~ end ~}}
+
+  constructor() {
+    inject(RouteFocus).start();
+    inject(Router)
+      .events.pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.state.closeMenu());
+  }
+
+  protected toggleMenu(): void {
+    this.state.toggleMenu();
+  }
+
+  protected closeMenu(): void {
+    this.state.closeMenu();
+  }
+
+  protected skipToMain(event: Event): void {
+    event.preventDefault();
+    this.document.getElementById('main')?.focus();
+  }
+}

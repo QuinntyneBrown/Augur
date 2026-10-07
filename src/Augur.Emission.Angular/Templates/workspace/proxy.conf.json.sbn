@@ -1,0 +1,7 @@
+{
+  "/api": {
+    "target": "{{ ApiDevelopmentUrl }}",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

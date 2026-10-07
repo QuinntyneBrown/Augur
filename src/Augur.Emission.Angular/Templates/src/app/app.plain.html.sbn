@@ -1,0 +1,47 @@
+<div class="app-shell">
+  <a class="skip-link" href="#main" (click)="skipToMain($event)">Skip to main content</a>
+  <header class="app-header">
+    <a class="brand" routerLink="/">{{ Title }}</a>
+    <button
+      type="button"
+      class="menu-button"
+      aria-label="Menu"
+      aria-controls="main-nav"
+      [attr.aria-expanded]="menuOpen()"
+      (click)="toggleMenu()"
+    >
+      <svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24">
+        <path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    </button>
+  </header>
+  <div class="app-body">
+    <nav id="main-nav" class="app-nav" [class.open]="menuOpen()" aria-label="Main">
+      <ul>
+        <li>
+          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">Home</a>
+        </li>
+{{~ if Auth ~}}
+        <li>
+          <a routerLink="/notes" routerLinkActive="active" ariaCurrentWhenActive="page">Notes</a>
+        </li>
+        <li>
+          @if (auth.signedIn()) {
+            <a routerLink="/sign-out" routerLinkActive="active" ariaCurrentWhenActive="page">Sign out</a>
+          } @else {
+            <a routerLink="/sign-in" routerLinkActive="active" ariaCurrentWhenActive="page">Sign in</a>
+          }
+        </li>
+{{~ end ~}}
+      </ul>
+    </nav>
+    <div class="app-content">
+      <main id="main" class="app-main" tabindex="-1">
+        <router-outlet />
+      </main>
+      <footer class="app-footer">
+        <p>{{ Title }}</p>
+      </footer>
+    </div>
+  </div>
+</div>

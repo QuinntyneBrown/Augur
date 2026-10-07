@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Augur.Emission.Angular</RootNamespace>
+  </PropertyGroup>
+  <!-- Maintainers only: eng/Regenerate-AngularLockfiles.ps1 builds with this to emit workspaces before their lockfiles exist. -->
+  <PropertyGroup Condition="'$(AugurBootstrapLockfiles)' == 'true'">
+    <DefineConstants>$(DefineConstants);AUGUR_BOOTSTRAP_LOCKFILES</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Templates/**/*" WithCulture="false" LogicalName="$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\','/'))" />
+    <EmbeddedResource Include="Lockfiles/*.json.gz" WithCulture="false" LogicalName="lockfiles/%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Augur.Emission/Augur.Emission.csproj" />
+  </ItemGroup>
+</Project>

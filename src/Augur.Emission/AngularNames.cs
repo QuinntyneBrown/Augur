@@ -10,7 +10,13 @@ public static class AngularNames
     /// Kebab-case of the solution name: words split at lower-to-upper and digit-to-upper boundaries and before the
     /// last capital of an acronym, joined with hyphens. <c>Acme.HRPortal</c> becomes <c>acme-hr-portal</c>.
     /// </summary>
-    public static string ProjectName(SolutionName name)
+    public static string ProjectName(SolutionName name) =>
+        string.Join('-', Words(name).Select(w => w.ToLowerInvariant()));
+
+    /// <summary>The same words with their original case, for page titles: <c>Acme.HRPortal</c> becomes <c>Acme HR Portal</c>.</summary>
+    public static string DisplayName(SolutionName name) => string.Join(' ', Words(name));
+
+    private static List<string> Words(SolutionName name)
     {
         var words = new List<string>();
         foreach (var segment in name.Segments)
@@ -29,12 +35,12 @@ public static class AngularNames
                     word.Clear();
                 }
 
-                word.Append(char.ToLowerInvariant(c));
+                word.Append(c);
             }
 
             words.Add(word.ToString());
         }
 
-        return string.Join('-', words);
+        return words;
     }
 }

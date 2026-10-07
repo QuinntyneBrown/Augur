@@ -1,5 +1,6 @@
 using Augur.Core.Catalog;
 using Augur.Emission;
+using Augur.Emission.Angular;
 using Augur.Emission.DotNet;
 
 namespace Augur.Cli;
@@ -13,6 +14,7 @@ internal static class Emitters
         [
             new ReadmeEmitter(DecisionCatalog.BuiltIn),
             new DotNetSolutionEmitter(),
+            new AngularWorkspaceEmitter(),
         ]);
         return host.EmitterDecorator?.Invoke(emitter) ?? emitter;
     }
