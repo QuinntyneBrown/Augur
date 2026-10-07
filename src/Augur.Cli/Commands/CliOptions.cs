@@ -1,4 +1,5 @@
 using System.CommandLine;
+using Augur.Core.Plan;
 
 namespace Augur.Cli.Commands;
 
@@ -44,12 +45,23 @@ internal static class CliOptions
         return option;
     }
 
-    public static Option<string> Name() => new("--name")
+    public static Option<string> Name()
     {
-        Description = "Name of the generated solution, for example Contoso.Orders.",
-        Required = true,
-        HelpName = "SolutionName",
-    };
+        var option = new Option<string>("--name")
+        {
+            Description = "Name of the generated solution, for example Contoso.Orders.",
+            Required = true,
+            HelpName = "SolutionName",
+        };
+        option.Validators.Add(result =>
+        {
+            if (!SolutionName.TryParse(result.GetValueOrDefault<string>(), out _))
+            {
+                result.AddError(SolutionName.Rule);
+            }
+        });
+        return option;
+    }
 
     public static Option<string[]> Set() => new("--set")
     {
