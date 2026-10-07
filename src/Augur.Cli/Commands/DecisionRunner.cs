@@ -18,15 +18,21 @@ internal static class DecisionRunner
     {
         var catalog = DecisionCatalog.BuiltIn;
         var args = run.ParseResult;
+        var offline = args.GetValue(options.Offline);
+        var refreshGiven = args.GetResult(options.Refresh) is not null;
+        CheckConflicts(offline, refreshGiven, args.GetValue(options.OracleScript) is not null);
+
         var name = SolutionName.Parse(args.GetRequiredValue(options.Name));
         var overrides = OverrideSet.Parse(args.GetValue(options.Set) ?? [], catalog);
+        var refresh = RefreshSet.Parse(refreshGiven, args.GetValue(options.Refresh) ?? [], catalog);
         var input = new SpecificationReader(run.Paths, run.Host.Stdin)
             .Read(args.GetRequiredValue(options.Spec), args.GetValue(options.Image) ?? []);
 
         var lockPath = args.GetRequiredValue(options.Lock);
         var lockStore = new LockfileStore(run.Paths.Resolve(lockPath), lockPath, catalog);
+        var previous = lockStore.Read();
 
-        var oracle = CreateOracle(run, options);
+        var oracle = new ReplayingOracle(previous, refresh, offline ? new OfflineOracle() : CreateOracle(run, options));
         var resolverOptions = new ResolverOptions(args.GetValue(options.MinConfidence));
         var resolver = new DecisionResolver(resolverOptions);
         var evaluator = new TreeEvaluator(catalog, oracle, resolver, CreateLowConfidenceHandler(run, options), TimeProvider.System, run.Reporter);
@@ -36,12 +42,21 @@ internal static class DecisionRunner
             lockStore.Write(Lockfile.From(state, input.InputHash, catalog, resolverOptions));
         }
 
-        return new DecisionRunResult(
-            input,
-            name,
-            state,
-            GenerationPlan.From(state, name, input.InputHash, catalog),
-            (oracle as IApiRequestCounter)?.ApiRequests ?? 0);
+        return new DecisionRunResult(input, name, state, GenerationPlan.From(state, name, input.InputHash, catalog), oracle.ApiRequests);
+    }
+
+    private static void CheckConflicts(bool offline, bool refresh, bool script)
+    {
+        const string Reason = "--offline resolves decisions only from overrides and the lockfile";
+        if (offline && refresh)
+        {
+            throw new UsageException($"--offline and --refresh conflict: {Reason}");
+        }
+
+        if (offline && script)
+        {
+            throw new UsageException($"--offline and --oracle-script conflict: {Reason}");
+        }
     }
 
     private static IDecisionOracle CreateOracle(CommandRun run, DecisionOptions options)
