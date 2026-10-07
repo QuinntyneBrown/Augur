@@ -1,0 +1,14 @@
+{
+  "catalogVersion": 2,
+  "questionHashes": {
+    "architecture": "b0002032381c3e6631865feee1cfbec9f250014274f3bad0ee08ba8066714fe7",
+    "authentication": "2d983f6c99d1d9e9b2eb286542a99c4cf7e79befbce8000254a452a8df3317ba",
+    "background-processing": "6c98005f639a23ff5843e172460cbaabe600a262d18cadb2988c9e18b54e7350",
+    "domain-complexity": "38591924c649999057cbf2356e279e8141b217c1510f2a5c7dda474cbc8e0483",
+    "persistence": "0d2e5ed4ee042e8694e52d6ccb3722177407b10502e521e10d56943e18512cea",
+    "server-side-rendering": "af1618441b8ea95f72ec27438e545cb3deaa253a9582d5f69d4bfea74a68be42",
+    "state-management": "1920420e38ed07f7c5f1cfe3b97a74869aa84a96bbbdbcb45d84b97c877d4380",
+    "target": "045fe92c63bd054d764aed162a6221b6791bd828039e4f72df326ec6a10ae41f",
+    "ui-library": "233e353c2954eadbdc1a07c66ac2ad40a6707328e312912517e1ab5c4a78e788"
+  }
+}

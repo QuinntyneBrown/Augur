@@ -13,6 +13,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Catalog/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/Augur.Cli/Augur.Cli.csproj" />
     <ProjectReference Include="../../src/Augur.Core/Augur.Core.csproj" />
   </ItemGroup>
