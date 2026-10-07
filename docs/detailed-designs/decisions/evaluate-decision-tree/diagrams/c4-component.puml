@@ -1,0 +1,24 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Evaluate the decision tree
+
+Container(cli, "Augur.Cli", ".NET console host", "PlanCommand")
+Container_Boundary(core, "Augur.Core") {
+  Component(evaluator, "TreeEvaluator", "Orchestrator", "Walks levels; one oracle call per level")
+  Component(catalog, "DecisionCatalog", "Immutable model", "Decision definitions and when clauses")
+  Component(leveller, "DependencyLeveller", "Pure function", "Orders decisions into dependency levels")
+  Component(state, "DecisionState", "Per-run state", "Pending / Skipped / Resolved per decision")
+  Component(resolver, "DecisionResolver", "Rules", "Thresholds and closed-answer checks")
+  Component(oracleIf, "IDecisionOracle", "Interface", "Answers a batch of DecisionRequests")
+}
+Container(oracleImpl, "Augur.Oracle.OpenAI", ".NET library", "DecisionsApiOracle")
+
+Rel(cli, evaluator, "EvaluateAsync(input, overrides)")
+Rel(evaluator, leveller, "Levels(catalog)")
+Rel(evaluator, catalog, "Reads definitions")
+Rel(evaluator, state, "Marks Skipped / stores Resolved")
+Rel(evaluator, oracleIf, "AnswerAsync(level requests)")
+Rel(evaluator, resolver, "Resolve(definition, answer)")
+Rel(oracleImpl, oracleIf, "Implements")
+@enduml

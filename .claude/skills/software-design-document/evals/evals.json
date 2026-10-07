@@ -1,0 +1,56 @@
+{
+  "skill_name": "software-design-document",
+  "evals": [
+    {
+      "id": 0,
+      "name": "library-subsystem-folders",
+      "prompt": "We just finalized the L1/L2 requirements for Shelf (our library system) under docs/specs, organized into subsystem folders. Can you produce the detailed design docs for the whole system — one write-up per feature, with the C4, class, and sequence diagrams and everything, rendered so they show up on GitHub?",
+      "fixture": "library",
+      "expected_output": "docs/detailed-designs/{catalog,lending}/{feature}/ each with README.md (Overview, Description, Requirements=L2-only, Diagrams) and diagrams/ of .puml + rendered .png; subsystem names reused from specs; C4 macros; resolving inline images; house style.",
+      "expectations": [
+        "docs/detailed-designs contains subsystem folders that reuse the spec names 'catalog' and 'lending' (not renamed or invented)",
+        "Each subsystem contains at least one vertical-feature folder, and every feature folder has a README.md plus a diagrams/ subfolder",
+        "Each feature README.md contains all four headings in order: Overview, Description, Requirements, Diagrams",
+        "Each feature's Requirements section lists only L2 requirements, each with its L2 ID, its parent L1 ID, and the requirement text; it does not present a standalone list of L1 requirements as the feature's requirements",
+        "Every .puml file under docs/detailed-designs has a rendered sibling .png of non-zero size",
+        "Every C4 diagram .puml uses the standard-library include (!include <C4/...>) and is composed of C4 macros (Person/System/Container/Component/Rel and *_Boundary blocks), with no raw PlantUML rectangle/component/node shapes",
+        "Every diagrams/*.png referenced by a README via ![](diagrams/...png) exists on disk, and every feature README has at least one inline image reference",
+        "Each feature includes at least one sequence diagram whose participants are grouped in boxes that separate Frontend from Backend (box \"Frontend ...\" and box \"Backend ...\")",
+        "README prose follows the house style: no first-person (we/our/us) or second-person (you/your) pronouns, and obligation is expressed only with shall/should/may (no must/need to/has to)",
+        "Each feature includes a class diagram showing typed structure (fields/methods) and at least one relationship"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "ticketing-flat-infer-subsystems",
+      "prompt": "Here's the HelpHub repo. The requirements are in docs/specs/requirements.md (they're tagged L1-.../L2-... by domain). I need proper detailed software design documents written up from these — break it down by subsystem and feature and include the diagrams.",
+      "fixture": "ticketing",
+      "expected_output": "Skill infers subsystems from the flat spec (e.g. ticketing and sla), then produces docs/detailed-designs/{subsystem}/{feature}/ with README.md (four headings, L2-only requirements) and diagrams/ (.puml + .png); C4 macros; resolving images; house style.",
+      "expectations": [
+        "docs/detailed-designs contains at least two subsystem folders inferred from the flat spec's domains (for example a tickets/ticketing subsystem and an sla subsystem), since docs/specs had no subsystem folders",
+        "Each subsystem contains at least one vertical-feature folder, and every feature folder has a README.md plus a diagrams/ subfolder",
+        "Each feature README.md contains all four headings in order: Overview, Description, Requirements, Diagrams",
+        "Each feature's Requirements section lists only L2 requirements, each with its L2 ID, its parent L1 ID, and the requirement text; it does not present a standalone list of L1 requirements as the feature's requirements",
+        "Every .puml file under docs/detailed-designs has a rendered sibling .png of non-zero size",
+        "Every C4 diagram .puml uses the standard-library include (!include <C4/...>) and is composed of C4 macros (Person/System/Container/Component/Rel and *_Boundary blocks), with no raw PlantUML rectangle/component/node shapes",
+        "Every diagrams/*.png referenced by a README via ![](diagrams/...png) exists on disk, and every feature README has at least one inline image reference",
+        "Each feature includes at least one sequence diagram whose participants are grouped in boxes that separate Frontend from Backend (box \"Frontend ...\" and box \"Backend ...\")",
+        "README prose follows the house style: no first-person (we/our/us) or second-person (you/your) pronouns, and obligation is expressed only with shall/should/may (no must/need to/has to)",
+        "Each feature includes a class diagram showing typed structure (fields/methods) and at least one relationship"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "greenfield-no-specs-gate",
+      "prompt": "Create the detailed software design documents for this Orchard project.",
+      "fixture": "greenfield-no-specs",
+      "expected_output": "Requirements gate triggers: no docs/specs with L1/L2 requirements exists (only informal docs/notes.md and some source). The run stops, tells the user it needs L1/L2 requirements under docs/specs, and does not scaffold docs/detailed-designs or invent requirements.",
+      "expectations": [
+        "The run did NOT scaffold a docs/detailed-designs tree — no feature folders or design READMEs were created in the project",
+        "The assistant stopped and explicitly told the user it needs a docs/specs folder containing L1 and L2 requirements before it can produce detailed designs",
+        "The assistant did not fabricate L1/L2 requirements or invent a design to fill the gap",
+        "The stop decision correctly recognizes that only informal notes exist (docs/notes.md), with no leveled L1/L2 requirements"
+      ]
+    }
+  ]
+}

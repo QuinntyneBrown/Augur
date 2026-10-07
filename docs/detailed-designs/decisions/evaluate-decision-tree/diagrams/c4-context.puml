@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Evaluate the decision tree
+
+Person(dev, "Developer", "Runs augur plan against a specification")
+System(augur, "Augur CLI", "Decides what to generate, then emits code")
+System_Ext(openai, "OpenAI Decisions API", "Answers predicate, choice, and score questions")
+
+Rel(dev, augur, "Runs augur plan with", "terminal")
+Rel(augur, openai, "Sends one batched question set per dependency level", "HTTPS / JSON")
+@enduml

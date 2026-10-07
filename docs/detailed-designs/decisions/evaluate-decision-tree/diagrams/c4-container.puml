@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Evaluate the decision tree
+
+Person(dev, "Developer", "Runs augur plan")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "Parses commands and options; reports progress")
+  Container(core, "Augur.Core", ".NET library", "Catalog, behaviour tree, resolver, plan")
+  Container(oracle, "Augur.Oracle.OpenAI", ".NET library", "Typed HttpClient for /v1/decisions")
+  ContainerDb(lock, "decisions.json", "JSON file", "Recorded answers for replay")
+}
+System_Ext(openai, "OpenAI Decisions API", "Answers catalog questions")
+
+Rel(dev, cli, "Runs augur plan", "terminal")
+Rel(cli, core, "Starts TreeEvaluator")
+Rel(core, oracle, "AnswerAsync once per level", "IDecisionOracle")
+Rel(oracle, openai, "POST /v1/decisions", "HTTPS / JSON")
+Rel(core, lock, "Reads and writes entries", "System.Text.Json")
+@enduml
