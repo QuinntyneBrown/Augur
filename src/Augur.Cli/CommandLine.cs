@@ -26,7 +26,8 @@ internal static class CommandLine
             version.Action = new VersionAction();
         }
 
-        root.Options.Add(CliOptions.Verbosity());
+        context.Verbosity = CliOptions.Verbosity();
+        root.Options.Add(context.Verbosity);
         root.Subcommands.Add(new PlanCommand(context));
         root.Subcommands.Add(new EmitCommand(context));
         root.Subcommands.Add(new GenerateCommand(context));
