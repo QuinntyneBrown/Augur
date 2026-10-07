@@ -7,7 +7,12 @@ namespace Augur.Core.Decisions;
 /// Walks the catalog one dependency level at a time. Overrides resolve first; decisions whose when clause is
 /// false are skipped; the remaining decisions of a level go to the oracle in one batch.
 /// </summary>
-public sealed class TreeEvaluator(DecisionCatalog catalog, IDecisionOracle oracle, TimeProvider time)
+public sealed class TreeEvaluator(
+    DecisionCatalog catalog,
+    IDecisionOracle oracle,
+    DecisionResolver resolver,
+    ILowConfidenceHandler lowConfidence,
+    TimeProvider time)
 {
     /// <exception cref="UsageException">An override names a decision that does not apply.</exception>
     /// <exception cref="UnresolvedDecisionsException">A decision could not be resolved.</exception>
@@ -42,7 +47,7 @@ public sealed class TreeEvaluator(DecisionCatalog catalog, IDecisionOracle oracl
             if (pending.Count > 0)
             {
                 var answers = await oracle.AnswerAsync(input, [.. pending.Select(d => new DecisionRequest(d))], cancellationToken);
-                ResolveLevel(pending, answers, state);
+                await ResolveLevelAsync(pending, answers, state, cancellationToken);
             }
         }
 
@@ -93,6 +98,59 @@ public sealed class TreeEvaluator(DecisionCatalog catalog, IDecisionOracle oracl
         }
     }
 
-    private static void ResolveLevel(IReadOnlyList<DecisionDefinition> pending, IReadOnlyList<DecisionAnswer> answers, DecisionState state) =>
-        throw new NotSupportedException("answers from an oracle are not resolved yet");
+    private async Task ResolveLevelAsync(
+        IReadOnlyList<DecisionDefinition> pending,
+        IReadOnlyList<DecisionAnswer> answers,
+        DecisionState state,
+        CancellationToken cancellationToken)
+    {
+        var byId = answers.ToDictionary(a => a.DecisionId, StringComparer.Ordinal);
+        var lowConfidenceDecisions = new List<LowConfidence>();
+        foreach (var definition in pending)
+        {
+            if (!byId.TryGetValue(definition.Id, out var answer))
+            {
+                throw new InvalidOperationException($"the oracle returned no answer for {definition.Id}");
+            }
+
+            switch (resolver.Resolve(definition, answer))
+            {
+                case Resolved resolved:
+                    state.Store(new ResolvedDecision(
+                        definition.Id,
+                        resolved.Value,
+                        answer.Source,
+                        answer,
+                        definition.QuestionHash,
+                        answer.Replayed?.ResolvedAt ?? time.GetUtcNow()));
+                    break;
+                case LowConfidence low:
+                    lowConfidenceDecisions.Add(low);
+                    break;
+            }
+        }
+
+        if (lowConfidenceDecisions.Count == 0)
+        {
+            return;
+        }
+
+        var handled = await lowConfidence.HandleAsync(lowConfidenceDecisions, cancellationToken);
+        foreach (var low in lowConfidenceDecisions)
+        {
+            var decision = handled.Single(h => h.Id == low.Definition.Id);
+            if (!low.Definition.AcceptedValues.Contains(decision.Value))
+            {
+                throw new InvalidOperationException($"the low-confidence policy chose '{decision.Value}', which is not an answer for {decision.Id}");
+            }
+
+            state.Store(new ResolvedDecision(
+                decision.Id,
+                decision.Value,
+                decision.Source,
+                low.Answer,
+                low.Definition.QuestionHash,
+                time.GetUtcNow()));
+        }
+    }
 }

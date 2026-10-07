@@ -1,9 +1,6 @@
 using System.CommandLine;
 using Augur.Core;
 using Augur.Core.Catalog;
-using Augur.Core.Decisions;
-using Augur.Core.Intake;
-using Augur.Core.Plan;
 
 namespace Augur.Cli.Commands;
 
@@ -23,16 +20,8 @@ internal sealed class PlanCommand : Command
 
     private async Task<ExitCode> RunAsync(CommandRun run)
     {
-        var catalog = DecisionCatalog.BuiltIn;
-        var name = SolutionName.Parse(run.ParseResult.GetRequiredValue(Decisions.Name));
-        var overrides = OverrideSet.Parse(run.ParseResult.GetValue(Decisions.Set) ?? [], catalog);
-        var input = new SpecificationReader(run.Paths, run.Host.Stdin)
-            .Read(run.ParseResult.GetRequiredValue(Decisions.Spec), run.ParseResult.GetValue(Decisions.Image) ?? []);
-
-        var evaluator = new TreeEvaluator(catalog, new NoOracle(), TimeProvider.System);
-        var state = await evaluator.EvaluateAsync(input, overrides, run.Token);
-
-        var json = GenerationPlan.From(state, name, input.InputHash, catalog).ToJson(catalog);
+        var result = await DecisionRunner.RunAsync(run, Decisions);
+        var json = result.Plan.ToJson(DecisionCatalog.BuiltIn);
         if (run.ParseResult.GetValue(Out) is { } outPath)
         {
             AtomicFile.WriteAllText(run.Paths.Resolve(outPath), json);

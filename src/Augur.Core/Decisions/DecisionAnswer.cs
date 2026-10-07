@@ -56,6 +56,9 @@ public sealed record DecisionAnswer(
     ChoiceResult? Choice = null,
     ScoreResult? Score = null)
 {
+    /// <summary>The model declined to answer; the decision is low-confidence.</summary>
+    public bool Refused { get; init; }
+
     /// <summary>The answer's model, when it came from the Decisions API.</summary>
     public string? Model { get; init; }
 

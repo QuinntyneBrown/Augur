@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Augur.Oracle.Scripted</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Augur.Core/Augur.Core.csproj" />
+  </ItemGroup>
+</Project>
