@@ -1,0 +1,17 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Explain recorded decisions
+
+Person(dev, "Developer", "Runs augur explain")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "ExplainCommand; text or JSON on stdout")
+  Container(core, "Augur.Core", ".NET library", "LockfileStore, DecisionCatalog, ExplainBuilder")
+  ContainerDb(lock, "decisions.json", "JSON file", "Recorded answers")
+}
+
+Rel(dev, cli, "augur explain [--lock path] [--json]", "terminal")
+Rel(cli, core, "Read lockfile; build ExplainEntry list")
+Rel(core, lock, "Reads", "System.Text.Json")
+Rel(cli, dev, "Report", "stdout")
+@enduml

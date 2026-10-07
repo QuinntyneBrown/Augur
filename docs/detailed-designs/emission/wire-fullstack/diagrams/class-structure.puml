@@ -1,0 +1,83 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Wire a fullstack application
+
+package "Augur.Emission" {
+  interface IEmitter {
+    +Emit(context: EmissionContext): FileSet
+  }
+  class EmissionContext {
+    +GenerationPlan Plan
+    +string SolutionName
+    +string AngularProjectName
+  }
+  class FileSet {
+    +Add(relativePath: string, content: string): void
+    +{static} Merge(a: FileSet, b: FileSet): FileSet
+  }
+}
+
+package "Augur.Emission.Fullstack" {
+  class FullstackEmitter {
+    -IEmitter dotnet
+    -IEmitter angular
+    +Emit(context: EmissionContext): FileSet
+    -RenderWiring(context: EmissionContext, files: FileSet): void
+  }
+}
+
+package "Emitted {Name}.Api" {
+  class HealthEndpoint {
+    +{static} Map(app: IEndpointRouteBuilder): void
+  }
+  class SpaStartup {
+    +{static} UseSpaHosting(app: WebApplication): void
+  }
+  class "BuildAngular (MSBuild target)" as BuildAngular {
+    +BeforeTargets = ComputeFilesToPublish
+    +Exec npm ci; npm run build -- --configuration production
+    +Include ../web/dist/{name}/browser/** as wwwroot
+  }
+}
+
+package "Emitted web/" {
+  class "environment" as Env {
+    +apiBaseUrl: string = '/api'
+  }
+  class HealthApi {
+    +check(): Promise<'Healthy' | 'Unavailable'>
+  }
+  class HomeComponent {
+    +Signal<'Healthy' | 'Unavailable' | 'Checking'> apiStatus
+    +ngOnInit(): void
+  }
+  class "proxy.conf.json" as Proxy {
+    +'/api': { target, secure: false, changeOrigin: true }
+  }
+}
+
+IEmitter <|.. FullstackEmitter
+FullstackEmitter o-- "2" IEmitter : inner emitters
+FullstackEmitter ..> EmissionContext : reads
+FullstackEmitter ..> FileSet : merges and produces
+FullstackEmitter ..> HealthEndpoint : emits template for
+FullstackEmitter ..> SpaStartup : emits template for
+FullstackEmitter ..> BuildAngular : emits target for
+FullstackEmitter ..> Proxy : emits
+FullstackEmitter ..> Env : emits
+HomeComponent --> HealthApi : check()
+HealthApi ..> Env : apiBaseUrl
+HealthApi ..> HealthEndpoint : GET /api/health
+BuildAngular ..> SpaStartup : populates wwwroot served by
+@enduml

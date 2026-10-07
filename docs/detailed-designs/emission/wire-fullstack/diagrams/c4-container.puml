@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Wire a fullstack application
+
+Person(dev, "Developer", "Runs augur emit")
+Person(user, "End user", "Browser")
+System_Boundary(augur, "Augur CLI") {
+  Container(emission, "Augur.Emission", ".NET library", "Pipeline, FileSet")
+  Container(fullstack, "Augur.Emission.Fullstack", ".NET library", "FullstackEmitter + Fullstack/ templates")
+  Container(dotnet, "Augur.Emission.DotNet", ".NET library", "DotNetSolutionEmitter")
+  Container(angular, "Augur.Emission.Angular", ".NET library", "AngularWorkspaceEmitter")
+}
+System_Boundary(devtime, "Emitted application — development") {
+  Container(ngserve, "ng serve", "Angular dev server", "Serves web/ with proxy.conf.json")
+  Container(apidev, "{Name}.Api (dotnet run)", "ASP.NET Core", "GET /api/health and endpoints")
+}
+System_Boundary(published, "Emitted application — published") {
+  Container(apipub, "{Name}.Api (published)", "ASP.NET Core", "/api endpoints + wwwroot with Angular build; SPA fallback")
+}
+
+Rel(dev, emission, "augur emit --plan --out", "terminal")
+Rel(emission, fullstack, "Emit(context)", "IEmitter")
+Rel(fullstack, dotnet, "Emit(root)")
+Rel(fullstack, angular, "Emit(web/)")
+Rel(fullstack, emission, "Merged FileSet")
+Rel(emission, devtime, "Writes files", "file system")
+Rel(user, ngserve, "GET / and /api/health", "HTTP")
+Rel(ngserve, apidev, "Proxies /api", "proxy.conf.json")
+Rel(dev, apipub, "dotnet publish builds web/ into wwwroot", "MSBuild target")
+Rel(user, apipub, "GET /, /some/route -> index.html; /api/* -> endpoints", "HTTPS, one origin")
+@enduml

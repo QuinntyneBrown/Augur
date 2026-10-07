@@ -1,0 +1,45 @@
+@startuml
+title UML sequence behaviour — List the catalog
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "CatalogCommand" as cmd
+  participant "StdoutWriter" as stdout
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "DecisionCatalog" as catalog
+  participant "CatalogEntryView" as view
+  participant "CatalogListing" as text
+  participant "CatalogJsonWriter" as json
+end box
+
+dev -> cmd : augur catalog [--json]
+cmd -> catalog : BuiltIn
+catalog --> cmd : CatalogVersion = 2; nine definitions
+loop for each definition
+  cmd -> view : From(definition)
+  view --> cmd : id, type, answers, default, when
+end
+alt --json absent
+  cmd -> text : Render(entries) (L2-008)
+  text --> cmd : fixed-width text listing
+else --json
+  cmd -> json : Render(2, entries) (L2-008)
+  json --> cmd : { "catalogVersion": 2, "decisions": [...] }
+end
+cmd -> stdout : Write(result)
+cmd --> dev : stdout listing; exit 0
+@enduml

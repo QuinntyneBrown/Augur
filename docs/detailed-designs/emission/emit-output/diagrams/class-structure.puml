@@ -31,11 +31,13 @@ class FileSet {
   +IReadOnlyDictionary<string, byte[]> Files
   +Add(relativePath: string, text: string): void
   +AddBinary(relativePath: string, bytes: byte[]): void
+  +Merge(other: FileSet): FileSet
   +IReadOnlyList<string> SortedPaths()
 }
 
 class TemplateEngine {
   +Render(resourceName: string, context: EmissionContext): string
+  +Static(resourceName: string): byte[]
 }
 
 class DeterministicGuid {

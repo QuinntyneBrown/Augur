@@ -1,0 +1,11 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Explain recorded decisions
+
+Person(dev, "Developer", "Reads why each decision was made")
+System(augur, "Augur CLI", "Renders the lockfile as a readable report")
+
+Rel(dev, augur, "Runs augur explain [--lock path] [--json]", "terminal")
+Rel(augur, dev, "Report: id, value, source, raw result, thresholds", "stdout")
+@enduml

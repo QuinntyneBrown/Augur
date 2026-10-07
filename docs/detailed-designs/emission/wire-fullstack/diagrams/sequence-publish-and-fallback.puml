@@ -1,0 +1,50 @@
+@startuml
+title UML sequence behaviour — Publish and serve as one origin
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+participant "Browser" as browser
+box "Frontend — {Name} web (Angular)" #E0F2FE
+  participant "Angular CLI (ng build)" as ngbuild
+end box
+box "Backend — {Name}.Api (ASP.NET Core)" #D1FADF
+  participant "MSBuild BuildAngular target" as msbuild
+  participant "SpaStartup (static files + fallback)" as spa
+  participant "Endpoint routing" as routing
+  participant "HealthEndpoint" as health
+end box
+
+== Publish ==
+dev -> msbuild : dotnet publish {Name}.Api
+msbuild -> ngbuild : npm ci; npm run build -- --configuration production (in ../web) (L2-053)
+ngbuild --> msbuild : dist/{name}/browser/**
+msbuild -> msbuild : Include browser/** as wwwroot content
+msbuild --> dev : publish output with wwwroot/index.html and bundles
+
+== Serve ==
+dev -> spa : run published {Name}.Api
+browser -> spa : GET /
+spa --> browser : wwwroot/index.html (UseDefaultFiles + UseStaticFiles)
+browser -> spa : GET /some/client/route
+spa -> routing : no static file matches
+routing -> spa : MapFallbackToFile("index.html") — path does not start with /api (L2-053)
+spa --> browser : index.html (client router renders the route)
+browser -> routing : GET /api/health
+routing -> health : matched endpoint
+health --> browser : 200 {"status":"Healthy"}
+browser -> routing : GET /api/does-not-exist
+routing -> routing : no endpoint; fallback excluded for /api (L2-053)
+routing --> browser : 404 Not Found
+@enduml

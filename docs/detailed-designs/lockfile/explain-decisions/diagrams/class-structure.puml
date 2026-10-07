@@ -1,0 +1,80 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Explain recorded decisions
+
+class ExplainCommand {
+  +string LockPath = ./decisions.json
+  +bool Json
+  +ExecuteAsync(ct: CancellationToken): Task<int>
+}
+
+class ExplainBuilder {
+  +Build(lockfile: Lockfile, catalog: DecisionCatalog): IReadOnlyList<ExplainEntry>
+}
+
+class ExplainEntry {
+  +string Id
+  +string Value
+  +DecisionSource Source
+  +ExplainResult Result
+  +ExplainThresholds Thresholds
+  +DateTimeOffset ResolvedAt
+  +string? Model
+  +bool Stale
+}
+
+class ExplainResult {
+  +double? Probability
+  +double? Confidence
+  +double? Score
+  +IReadOnlyList<(string Label, double Probability)> Distribution
+}
+
+class ExplainThresholds {
+  +double? Upper
+  +double? Lower
+  +double? MinConfidence
+  +double? CutOff
+}
+
+interface IExplainWriter {
+  +Write(entries: IReadOnlyList<ExplainEntry>, output: TextWriter): void
+}
+
+class ExplainTextWriter {
+  +Write(entries, output): void
+}
+
+class ExplainJsonWriter {
+  +Write(entries, output): void
+}
+
+class LockfileStore {
+  +Read(): Lockfile?
+}
+
+class DecisionCatalog {
+  +DecisionDefinition? TryGet(id: string)
+}
+
+ExplainCommand ..> LockfileStore : Read()
+ExplainCommand ..> DecisionCatalog : thresholds
+ExplainCommand ..> ExplainBuilder : Build()
+ExplainCommand ..> IExplainWriter : Write()
+IExplainWriter <|.. ExplainTextWriter
+IExplainWriter <|.. ExplainJsonWriter
+ExplainBuilder ..> ExplainEntry : produces
+ExplainEntry *-- ExplainResult
+ExplainEntry *-- ExplainThresholds
+@enduml

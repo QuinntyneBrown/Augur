@@ -1,0 +1,50 @@
+@startuml
+title UML sequence behaviour — Development proxy and health display
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+participant "Browser" as browser
+box "Frontend — {Name} web (Angular)" #E0F2FE
+  participant "ng serve (dev server)" as ngserve
+  participant "HomeComponent" as home
+  participant "HealthApi" as api
+end box
+box "Backend — {Name}.Api (ASP.NET Core)" #D1FADF
+  participant "HealthEndpoint" as health
+end box
+
+dev -> ngserve : ng serve (proxyConfig = proxy.conf.json)
+dev -> browser : Open http://localhost:4200/
+browser -> ngserve : GET /
+ngserve --> browser : index.html + bundles
+browser -> home : bootstrap; ngOnInit()
+home -> api : check()
+api -> browser : HttpClient GET {apiBaseUrl}/health -> /api/health (5 s timeout)
+browser -> ngserve : GET /api/health
+alt API running (L2-053)
+  ngserve -> health : Proxy to https://localhost:<port>/api/health
+  health --> ngserve : 200 {"status":"Healthy"}
+  ngserve --> browser : 200
+  browser --> api : response
+  api --> home : 'Healthy'
+  home --> browser : Render "API: Healthy" in role="status"
+else API stopped
+  ngserve --> browser : 502 Bad Gateway (or timeout at 5 s)
+  browser --> api : HttpErrorResponse
+  api -> api : catch -> 'Unavailable'; no uncaught rejection
+  api --> home : 'Unavailable'
+  home --> browser : Render "API: Unavailable" within 5 s (L2-053)
+end
+@enduml

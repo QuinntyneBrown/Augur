@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Explain recorded decisions
+
+Container_Boundary(cli, "Augur.Cli") {
+  Component(cmd, "ExplainCommand", "Command handler", "--lock, --json; exit 2 on missing or invalid lockfile")
+  Component(text, "ExplainTextWriter", "Renderer", "One section per entry; probabilities to two decimals")
+  Component(json, "ExplainJsonWriter", "Renderer", "JSON array with the same fields (L2-039)")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(store, "LockfileStore", "File I/O", "Read()")
+  Component(catalog, "DecisionCatalog", "Model", "Thresholds per decision")
+  Component(builder, "ExplainBuilder", "Mapper", "LockfileEntry + definition -> ExplainEntry; sorts distribution desc")
+  Component(entry, "ExplainEntry", "View model", "id, value, source, result, thresholds, stale")
+}
+ContainerDb(lock, "decisions.json", "JSON file", "Recorded answers")
+
+Rel(cmd, store, "Read()")
+Rel(store, lock, "Reads")
+Rel(cmd, catalog, "Load()")
+Rel(cmd, builder, "Build(lockfile, catalog)")
+Rel(builder, entry, "Produces list")
+Rel(cmd, text, "Write(entries) when --json absent")
+Rel(cmd, json, "Write(entries) when --json present")
+@enduml

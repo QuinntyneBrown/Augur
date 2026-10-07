@@ -1,0 +1,41 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Wire a fullstack application
+
+Container(emission, "Augur.Emission", ".NET library", "Pipeline calling IEmitter")
+Container_Boundary(fullstack, "Augur.Emission.Fullstack") {
+  Component(emitter, "FullstackEmitter", "IEmitter", "Composes inner emitters; renders Fullstack/ group")
+  Component(dotnetEmitter, "DotNetSolutionEmitter", "IEmitter", "Solution at output root")
+  Component(angularEmitter, "AngularWorkspaceEmitter", "IEmitter", "Workspace at web/")
+  Component(merge, "FileSet.Merge", "Operation", "Union of inner sets; throws on path collision")
+  Component(templates, "Fullstack/ templates", "Scriban + static", "proxy.conf.json, environment.ts, HealthApi, HealthEndpoint, SpaStartup, publish targets")
+}
+Container_Boundary(api, "Emitted {Name}.Api") {
+  Component(health, "HealthEndpoint", "Minimal API", "GET /api/health -> 200 {\"status\":\"Healthy\"}; anonymous")
+  Component(spa, "SpaStartup", "Startup extension", "Static files + index.html fallback for non-/api paths")
+  Component(publish, "BuildAngular target", "MSBuild", "npm ci + production build into wwwroot on publish")
+}
+Container_Boundary(web, "Emitted web/") {
+  Component(proxy, "proxy.conf.json", "Angular CLI proxy", "/api -> API dev URL")
+  Component(env, "environment.ts", "Config", "apiBaseUrl = '/api'")
+  Component(healthApi, "HealthApi", "Angular service", "GET {apiBaseUrl}/health with 5 s timeout")
+  Component(home, "HomeComponent", "Standalone component", "Shows API: Healthy / Unavailable")
+}
+
+Rel(emission, emitter, "Emit(EmissionContext)")
+Rel(emitter, dotnetEmitter, "Emit(context, root)")
+Rel(emitter, angularEmitter, "Emit(context, web/)")
+Rel(emitter, merge, "Merge(dotnetFiles, angularFiles)")
+Rel(emitter, templates, "Render on top")
+Rel(templates, health, "Emits")
+Rel(templates, spa, "Emits")
+Rel(templates, publish, "Emits")
+Rel(templates, proxy, "Emits")
+Rel(templates, env, "Emits")
+Rel(templates, healthApi, "Emits")
+Rel(home, healthApi, "check()")
+Rel(healthApi, env, "Reads apiBaseUrl")
+Rel(healthApi, health, "GET /api/health (via proxy in dev)")
+Rel(publish, spa, "Populates wwwroot")
+@enduml

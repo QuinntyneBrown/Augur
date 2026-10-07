@@ -1,0 +1,56 @@
+@startuml
+title UML sequence behaviour — Explain recorded decisions
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "ExplainCommand" as cmd
+  participant "ExplainTextWriter /\nExplainJsonWriter" as writer
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "LockfileStore" as store
+  participant "DecisionCatalog" as catalog
+  participant "ExplainBuilder" as builder
+end box
+box "Backend — Augur Infrastructure (Oracle / file system)" #FFF4E5
+  database "decisions.json" as file
+end box
+
+dev -> cmd : augur explain [--lock path] [--json]
+cmd -> store : Read()
+store -> file : read
+alt file absent
+  store --> cmd : null
+  cmd --> dev : error: lockfile not found at <path> (exit 2)
+else invalid JSON or unsupported lockfileVersion
+  store --> cmd : UsageException
+  cmd --> dev : error: ... (exit 2)
+else parsed
+  store --> cmd : Lockfile
+  cmd -> catalog : Load()
+  catalog --> cmd : definitions
+  cmd -> builder : Build(lockfile, catalog)
+  loop for each entry sorted by id
+    builder -> builder : join with definition; sort distribution desc;\nthresholds from definition; Stale if id missing or questionHash differs
+  end
+  builder --> cmd : ExplainEntry list
+  alt --json
+    cmd -> writer : ExplainJsonWriter.Write(entries, stdout) (L2-039)
+  else text
+    cmd -> writer : ExplainTextWriter.Write(entries, stdout) (L2-039)
+  end
+  writer --> dev : report on stdout (exit 0)
+end
+@enduml

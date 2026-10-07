@@ -1,0 +1,77 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — List the catalog
+
+class CatalogCommand {
+  +Option<bool> JsonOption
+  +Invoke(json: bool): ExitCode
+}
+
+class DecisionCatalog {
+  +int CatalogVersion
+  +IReadOnlyList<DecisionDefinition> Decisions
+}
+
+abstract class DecisionDefinition {
+  +string Id
+  +DecisionType Type
+  +string Default
+  +WhenClause? When
+}
+
+class WhenClause {
+  +string DependsOn
+  +IReadOnlySet<string> AcceptedValues
+}
+
+class CatalogEntryView {
+  +string Id
+  +string Type
+  +IReadOnlyList<string> Answers
+  +string Default
+  +WhenView? When
+  +{static} From(definition: DecisionDefinition): CatalogEntryView
+}
+
+class WhenView {
+  +string DependsOn
+  +IReadOnlyList<string> AcceptedValues
+  +ToText(): string
+}
+
+class CatalogListing {
+  +Render(entries: IReadOnlyList<CatalogEntryView>): string
+}
+
+class CatalogJsonWriter {
+  +Render(catalogVersion: int, entries: IReadOnlyList<CatalogEntryView>): string
+}
+
+class StdoutWriter {
+  +Write(text: string): void
+}
+
+CatalogCommand ..> DecisionCatalog : reads BuiltIn
+CatalogCommand ..> CatalogEntryView : builds
+CatalogCommand ..> CatalogListing : text form
+CatalogCommand ..> CatalogJsonWriter : --json form
+CatalogCommand --> StdoutWriter : writes
+DecisionCatalog "1" *-- "*" DecisionDefinition
+DecisionDefinition "1" o-- "0..1" WhenClause
+CatalogEntryView ..> DecisionDefinition : derived from
+CatalogEntryView "1" o-- "0..1" WhenView
+WhenView ..> WhenClause : derived from
+CatalogListing ..> CatalogEntryView : consumes
+CatalogJsonWriter ..> CatalogEntryView : consumes
+@enduml

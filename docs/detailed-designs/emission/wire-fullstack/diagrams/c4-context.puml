@@ -1,0 +1,17 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Wire a fullstack application
+
+Person(dev, "Developer", "Runs augur emit; develops and publishes the result")
+Person(user, "End user", "Uses the published application")
+System(augur, "Augur CLI", "Emits .NET solution at root and Angular workspace at web/")
+System(emitted, "Emitted {Name} fullstack application", "ASP.NET Core API serving /api and the Angular build from one origin")
+System_Ext(oidc, "OpenID Connect authority", "Token issuer (authentication=true)")
+
+Rel(dev, augur, "Runs augur emit --plan --out", "terminal")
+Rel(augur, emitted, "Writes both halves and the wiring", "file system")
+Rel(dev, emitted, "ng serve + dotnet run; dotnet publish", "CLI tools")
+Rel(user, emitted, "Loads the application and calls /api", "HTTPS, single origin")
+Rel(emitted, oidc, "Validates tokens / signs users in", "HTTPS")
+@enduml
