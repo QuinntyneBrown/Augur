@@ -8,7 +8,7 @@ using Augur.Oracle.Scripted;
 namespace Augur.Cli.Commands;
 
 /// <summary>The resolved decisions of one run, with the input they were resolved for.</summary>
-internal sealed record DecisionRunResult(SpecificationInput Input, SolutionName Name, DecisionState State, GenerationPlan Plan);
+internal sealed record DecisionRunResult(SpecificationInput Input, SolutionName Name, DecisionState State, GenerationPlan Plan, int ApiRequests);
 
 /// <summary>Reads the inputs named by <see cref="DecisionOptions"/>, evaluates the decision tree, and builds the plan.</summary>
 internal static class DecisionRunner
@@ -24,10 +24,15 @@ internal static class DecisionRunner
 
         var oracle = CreateOracle(run, options);
         var resolver = new DecisionResolver(new ResolverOptions(args.GetValue(options.MinConfidence)));
-        var evaluator = new TreeEvaluator(catalog, oracle, resolver, CreateLowConfidenceHandler(run, options), TimeProvider.System);
+        var evaluator = new TreeEvaluator(catalog, oracle, resolver, CreateLowConfidenceHandler(run, options), TimeProvider.System, run.Reporter);
         var state = await evaluator.EvaluateAsync(input, overrides, run.Token);
 
-        return new DecisionRunResult(input, name, state, GenerationPlan.From(state, name, input.InputHash, catalog));
+        return new DecisionRunResult(
+            input,
+            name,
+            state,
+            GenerationPlan.From(state, name, input.InputHash, catalog),
+            (oracle as IApiRequestCounter)?.ApiRequests ?? 0);
     }
 
     private static IDecisionOracle CreateOracle(CommandRun run, DecisionOptions options)

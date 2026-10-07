@@ -12,7 +12,8 @@ public sealed class TreeEvaluator(
     IDecisionOracle oracle,
     DecisionResolver resolver,
     ILowConfidenceHandler lowConfidence,
-    TimeProvider time)
+    TimeProvider time,
+    IReporter reporter)
 {
     /// <exception cref="UsageException">An override names a decision that does not apply.</exception>
     /// <exception cref="UnresolvedDecisionsException">A decision could not be resolved.</exception>
@@ -40,6 +41,11 @@ public sealed class TreeEvaluator(
                     }
 
                     state.MarkSkipped(decision.Id);
+                    reporter.Detail($"{decision.Id} skipped: {SkipReason(when, state)}");
+                }
+                else if (state.Get(decision.Id) is { Source: DecisionSource.Override } overridden)
+                {
+                    LogResolved(overridden);
                 }
             }
 
@@ -48,11 +54,21 @@ public sealed class TreeEvaluator(
             {
                 var answers = await oracle.AnswerAsync(input, [.. pending.Select(d => new DecisionRequest(d))], cancellationToken);
                 await ResolveLevelAsync(pending, answers, state, cancellationToken);
+                foreach (var decision in pending)
+                {
+                    LogResolved(state.Get(decision.Id)!);
+                }
             }
         }
 
         return state;
     }
+
+    private void LogResolved(ResolvedDecision decision) =>
+        reporter.Detail($"{decision.Id} = {decision.Value} ({decision.Source.ToWireName()})");
+
+    private static string SkipReason(WhenClause when, DecisionState state) =>
+        state.ValueOf(when.DependsOn) is { } value ? $"{when.DependsOn} is {value}" : $"{when.DependsOn} does not apply";
 
     private static bool Applies(WhenClause when, DecisionState state) =>
         state.ValueOf(when.DependsOn) is { } value && when.AcceptedValues.Contains(value);

@@ -94,3 +94,9 @@ public interface IDecisionOracle
         IReadOnlyList<DecisionRequest> requests,
         CancellationToken cancellationToken);
 }
+
+/// <summary>An oracle that reaches the Decisions API and counts the requests it sent (retries excluded).</summary>
+public interface IApiRequestCounter
+{
+    int ApiRequests { get; }
+}

@@ -66,6 +66,9 @@ internal sealed class CliContext(ConsoleHost host)
 /// <summary>Everything a running command needs: its arguments, its console, its reporter, and its cancellation token.</summary>
 internal sealed record CommandRun(ConsoleHost Host, ParseResult ParseResult, ConsoleReporter Reporter, CancellationToken Token)
 {
+    /// <summary>Started when the command starts; reported in the run summary.</summary>
+    public System.Diagnostics.Stopwatch Clock { get; } = System.Diagnostics.Stopwatch.StartNew();
+
     public PathResolver Paths { get; } = new(Host.Cwd);
 
     /// <summary>Line-oriented stdin for prompts; created on first use so a <c>--spec -</c> read sees the raw bytes first.</summary>

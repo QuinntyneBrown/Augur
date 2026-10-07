@@ -31,6 +31,7 @@ internal sealed class PlanCommand : Command
             run.WriteStdout(json);
         }
 
+        run.Reporter.Info(RunSummary.Render(result.State, result.ApiRequests, run.Clock.Elapsed));
         return ExitCode.Success;
     }
 }
