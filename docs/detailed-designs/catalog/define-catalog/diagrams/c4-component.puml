@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Define the catalog
+
+Container(cli, "Augur.Cli", ".NET console host", "Program startup")
+Container_Boundary(core, "Augur.Core") {
+  Component(catalog, "DecisionCatalog", "Immutable model", "BuiltIn instance; CatalogVersion; Decisions")
+  Component(builder, "CatalogVersion2", "Static builder", "Declares the nine version-2 decisions")
+  Component(defs, "DecisionDefinition subclasses", "Model", "Predicate / Choice / Score; Default; When")
+  Component(when, "WhenClause", "Model", "DependsOn + AcceptedValues")
+  Component(validator, "CatalogValidator", "Guard", "Ids, defaults, descriptions, 'other', when graph (L2-007)")
+  Component(hasher, "QuestionHasher", "Pure function", "SHA-256 of canonical definition JSON (L2-009)")
+}
+Container(tests, "Augur.Tests", "Test project", "CatalogChangeTest snapshot of question hashes")
+
+Rel(cli, catalog, "Load()")
+Rel(catalog, builder, "Build()")
+Rel(builder, defs, "Creates")
+Rel(defs, when, "Holds")
+Rel(catalog, validator, "Validate(decisions)")
+Rel(catalog, hasher, "Hash(definition) per decision")
+Rel(tests, hasher, "Compares hashes with snapshot")
+Rel(tests, validator, "Feeds malformed fixture")
+@enduml

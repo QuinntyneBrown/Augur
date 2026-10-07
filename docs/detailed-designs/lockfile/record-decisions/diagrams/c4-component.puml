@@ -1,0 +1,27 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Record decisions in the lockfile
+
+Container(cli, "Augur.Cli", ".NET console host", "PlanCommand")
+Container_Boundary(core, "Augur.Core") {
+  Component(state, "DecisionState", "Per-run state", "Resolved / Skipped per decision")
+  Component(builder, "LockfileBuilder", "Mapper", "Drops Override and Skipped; keeps reused ResolvedAt (L2-022)")
+  Component(lockfile, "Lockfile", "Model", "Version, catalogVersion, inputHash, entries")
+  Component(hasher, "InputHasher", "Hash", "SHA-256 over spec text and image bytes")
+  Component(qhasher, "QuestionHasher", "Hash", "SHA-256 over canonical definition JSON")
+  Component(serializer, "LockfileSerializer", "Serializer", "Sorted by id, 2-space indent, LF, trailing newline (L2-025)")
+  Component(store, "LockfileStore", "File I/O", "Read with version check; atomic temp-and-rename write (L2-025)")
+}
+ContainerDb(file, "decisions.json", "JSON file", "Lockfile on disk")
+
+Rel(cli, store, "Read() before evaluation")
+Rel(cli, builder, "Build(state, inputHash, previous)")
+Rel(builder, state, "Reads Resolved decisions")
+Rel(builder, hasher, "InputHash")
+Rel(builder, qhasher, "QuestionHash per definition")
+Rel(builder, lockfile, "Produces")
+Rel(cli, store, "Write(lockfile) after evaluation")
+Rel(store, serializer, "Serialize / Deserialize")
+Rel(store, file, "Temp file then rename", "file system")
+@enduml

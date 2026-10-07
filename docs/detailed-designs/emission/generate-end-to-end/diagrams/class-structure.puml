@@ -1,0 +1,82 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Generate end to end
+
+class GenerateCommand {
+  +InvokeAsync(options: GenerateOptions, ct: CancellationToken): Task<int>
+}
+
+class GenerateOptions {
+  +PlanOptions Plan
+  +EmitOptions Emit
+}
+
+class PlanOptions {
+  +string Spec
+  +SolutionName Name
+  +IReadOnlyList<string> Images
+  +IReadOnlyList<(string, string)> Set
+  +LowConfidencePolicy? OnLowConfidence
+  +double? MinConfidence
+  +string Lock
+  +IReadOnlyList<string>? Refresh
+  +bool Offline
+  +string? OracleScript
+}
+
+class EmitOptions {
+  +string Out
+  +bool Force
+  +bool DryRun
+}
+
+class PlanFileEntry {
+  +{static} string Path = "augur.plan.json"
+  +Contribute(plan: GenerationPlan, files: FileSet): void
+}
+
+class RunClock {
+  +TimeSpan Elapsed
+  +TimeSpan OverheadPerRequest
+}
+
+class RunSummary {
+  +IReadOnlyDictionary<DecisionSource, int> BySource
+  +int Skipped
+  +int ApiRequests
+  +int FilesWritten
+  +TimeSpan Elapsed
+  +Render(): string
+}
+
+class TreeEvaluator
+class LockfileStore
+class PlanBuilder
+class PlanValidator
+class EmissionPipeline
+class OutputDirectoryPolicy
+
+GenerateOptions *-- PlanOptions
+GenerateOptions *-- EmitOptions
+GenerateCommand ..> GenerateOptions : binds
+GenerateCommand ..> OutputDirectoryPolicy : pre-check
+GenerateCommand ..> TreeEvaluator
+GenerateCommand ..> LockfileStore
+GenerateCommand ..> PlanBuilder
+GenerateCommand ..> PlanValidator
+GenerateCommand ..> PlanFileEntry
+GenerateCommand ..> EmissionPipeline
+GenerateCommand --> RunClock
+GenerateCommand ..> RunSummary : renders
+@enduml

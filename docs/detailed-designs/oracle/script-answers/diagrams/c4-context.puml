@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Answer from a script
+
+Person(dev, "Developer or CI job", "Supplies a scripted answer file")
+System(augur, "Augur CLI", "Resolves decisions from the script; no network")
+System_Ext(openai, "OpenAI Decisions API", "Not contacted when --oracle-script is set")
+
+Rel(dev, augur, "Runs augur plan --oracle-script answers.json", "terminal")
+Rel(augur, openai, "No request is sent", "none")
+@enduml

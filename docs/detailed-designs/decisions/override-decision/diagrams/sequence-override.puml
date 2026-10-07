@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Override a decision
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "PlanCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "OverrideParser" as parser
+  participant "TreeEvaluator" as eval
+  participant "DecisionState" as state
+end box
+box "Backend — Augur Infrastructure (Oracle)" #FFF4E5
+  participant "IDecisionOracle" as oracle
+end box
+
+dev -> cmd : augur plan --set target=dotnet --set architecture=minimal-api
+cmd -> parser : Parse(pairs, catalog)
+alt unknown id, value outside answer set, or "other"
+  parser --> cmd : throw UsageException
+  cmd --> dev : error: ... (exit 2)
+else all overrides valid
+  parser --> cmd : OverrideSet
+  cmd -> eval : EvaluateAsync(input, overrideSet)
+  eval -> state : Store(Resolved, Source = Override) for each override (L2-014)
+  loop for each level
+    eval -> state : Evaluate when clauses
+    alt overridden decision marked Skipped
+      eval --> cmd : throw UsageException("architecture does not apply when target is angular")
+      cmd --> dev : error: ... (exit 2)
+    else
+      eval -> state : Pending(level) excludes overridden decisions (L2-014)
+      opt pending decisions remain
+        eval -> oracle : AnswerAsync(pending only)
+        oracle --> eval : answers
+      end
+    end
+  end
+  eval --> cmd : DecisionState
+  cmd --> dev : plan with source "override" for each --set value
+end
+@enduml

@@ -1,0 +1,92 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Emit output safely
+
+interface IEmitter {
+  +Emit(context: EmissionContext): FileSet
+}
+
+class EmitterSelector {
+  +Select(plan: GenerationPlan): IEmitter
+}
+
+class EmissionContext {
+  +GenerationPlan Plan
+  +SolutionName SolutionName
+  +AngularProjectName AngularProjectName
+}
+
+class FileSet {
+  +IReadOnlyDictionary<string, byte[]> Files
+  +Add(relativePath: string, text: string): void
+  +AddBinary(relativePath: string, bytes: byte[]): void
+  +IReadOnlyList<string> SortedPaths()
+}
+
+class TemplateEngine {
+  +Render(resourceName: string, context: EmissionContext): string
+}
+
+class DeterministicGuid {
+  +{static} Guid Namespace
+  +{static} For(solutionName: string, projectName: string): Guid
+}
+
+class OutputDirectoryGuard {
+  +Check(files: FileSet, outputRoot: string): void
+}
+
+class OutputDirectoryPolicy {
+  +Check(outputRoot: string, force: bool): void
+}
+
+class StagingDirectory {
+  +string Path
+  +{static} CreateBeside(outputRoot: string): StagingDirectory
+  +Write(files: FileSet): void
+  +MoveInto(outputRoot: string, overwrite: bool): void
+  +Dispose(): void
+}
+
+class DryRunLister {
+  +List(files: FileSet, outputRoot: string, stdout: TextWriter): void
+}
+
+class EmissionPipeline {
+  +Emit(plan: GenerationPlan, outputRoot: string, force: bool, dryRun: bool, ct: CancellationToken): EmissionResult
+}
+
+class EmissionResult {
+  +int FilesWritten
+  +TimeSpan Elapsed
+}
+
+class ContainmentException
+class OutputConflictException
+
+EmissionPipeline ..> EmitterSelector
+EmissionPipeline ..> IEmitter : Emit
+EmissionPipeline ..> EmissionContext : builds
+EmissionPipeline ..> OutputDirectoryGuard
+EmissionPipeline ..> OutputDirectoryPolicy
+EmissionPipeline ..> StagingDirectory : creates / disposes
+EmissionPipeline ..> DryRunLister : when --dry-run
+EmissionPipeline ..> EmissionResult : returns
+IEmitter ..> TemplateEngine : renders with
+IEmitter ..> DeterministicGuid : uses
+IEmitter ..> FileSet : produces
+OutputDirectoryGuard ..> ContainmentException : throws (exit 5)
+OutputDirectoryPolicy ..> OutputConflictException : throws (exit 5)
+StagingDirectory ..> FileSet : writes
+@enduml

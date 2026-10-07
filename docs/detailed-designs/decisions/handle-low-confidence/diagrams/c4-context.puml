@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Handle a low-confidence decision
+
+Person(dev, "Developer", "May be prompted to settle a decision")
+System(augur, "Augur CLI", "Applies the low-confidence policy")
+System_Ext(openai, "OpenAI Decisions API", "Returns answers with confidence")
+
+Rel(dev, augur, "Runs augur plan; answers prompts on stdin", "terminal")
+Rel(openai, augur, "Answers below threshold", "HTTPS / JSON")
+@enduml

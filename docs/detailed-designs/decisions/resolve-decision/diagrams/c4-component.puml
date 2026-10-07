@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Resolve a decision
+
+Container_Boundary(core, "Augur.Core") {
+  Component(evaluator, "TreeEvaluator", "Orchestrator", "Supplies definition and answer")
+  Component(resolver, "DecisionResolver", "Rules", "Threshold rule per decision type")
+  Component(validator, "AnswerValidator", "Guard", "Closed-answer and range checks (L2-015)")
+  Component(options, "ResolverOptions", "Settings", "--min-confidence override (L2-021)")
+  Component(defs, "DecisionDefinition subclasses", "Model", "Predicate / Choice / Score thresholds")
+  Component(answer, "DecisionAnswer", "Record", "Raw result from any oracle")
+  Component(resolution, "Resolution", "Result", "Resolved(value) or LowConfidence(answer)")
+}
+
+Rel(evaluator, resolver, "Resolve(definition, answer)")
+Rel(resolver, validator, "Validate(definition, answer)")
+Rel(resolver, options, "Reads MinConfidenceOverride")
+Rel(resolver, defs, "Reads thresholds and answer set")
+Rel(resolver, answer, "Reads result shape")
+Rel(resolver, resolution, "Returns")
+@enduml

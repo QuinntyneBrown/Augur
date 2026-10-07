@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Emit an Angular workspace
+
+Container(emission, "Augur.Emission", ".NET library", "Pipeline calling IEmitter")
+Container(core, "Augur.Core", ".NET library", "AngularProjectName (L2-051)")
+Container_Boundary(angular, "Augur.Emission.Angular") {
+  Component(emitter, "AngularWorkspaceEmitter", "IEmitter", "Emits the workspace at '.' or 'web/'")
+  Component(selector, "AngularTemplateGroupSelector", "Mapping", "Plan values -> Shell/State/Ssr/Auth groups (L2-052)")
+  Component(model, "WorkspaceModel", "Render model", "ProjectName, WorkspaceRoot, ApiBaseUrl, packages")
+  Component(packages, "NpmPackageCatalog", "Static table", "Exact npm versions (L2-054)")
+  Component(lock, "EmbeddedLockfile", "Static resource", "package-lock.json matching the catalog")
+  Component(budgets, "BudgetModel", "Render model", "angular.json budgets (L2-057)")
+  Component(engine, "TemplateEngine", "Scriban wrapper", "Renders embedded templates")
+  Component(templates, "Embedded templates", "Scriban + static", "Common/, Shell/, State/, Ssr/, Auth/")
+}
+
+Rel(emission, emitter, "Emit(EmissionContext)")
+Rel(emitter, core, "AngularProjectName.From(SolutionName)")
+Rel(emitter, selector, "Select(plan)")
+Rel(emitter, model, "Builds")
+Rel(model, packages, "Exact versions")
+Rel(emitter, budgets, "Builds")
+Rel(emitter, engine, "Render(template, model)")
+Rel(engine, templates, "Loads resource")
+Rel(emitter, lock, "Static bytes")
+Rel(emitter, emission, "FileSet")
+@enduml

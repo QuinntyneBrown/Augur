@@ -1,0 +1,27 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Write the generation plan
+
+Container_Boundary(cli, "Augur.Cli") {
+  Component(nameopt, "NameOption", "System.CommandLine option", "Required --name; validator calls SolutionName.Parse")
+  Component(plancmd, "PlanCommand", "Command handler", "Orchestrates evaluate -> lockfile -> plan")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(name, "SolutionName", "Value object", "Regex, length, C# keyword checks (L2-027)")
+  Component(builder, "PlanBuilder", "Mapper", "DecisionState -> GenerationPlan")
+  Component(planModel, "GenerationPlan", "Record", "planVersion, catalogVersion, solutionName, inputHash, decisions")
+  Component(writer, "PlanWriter", "Serializer", "stdout or --out (L2-026)")
+  Component(canon, "CanonicalJson", "Serializer options", "Sorted keys, 2-space indent, LF, trailing newline")
+  Component(state, "DecisionState", "Per-run state", "Resolved and skipped decisions")
+}
+ContainerDb(planFile, "plan JSON", "JSON file or stdout", "Output")
+
+Rel(nameopt, name, "Parse(value)")
+Rel(plancmd, builder, "Build(state, name, inputHash, catalogVersion)")
+Rel(builder, state, "Reads resolved decisions")
+Rel(builder, planModel, "Creates")
+Rel(plancmd, writer, "Write(plan, outPath?)")
+Rel(writer, canon, "Serializes with")
+Rel(writer, planFile, "Writes")
+@enduml

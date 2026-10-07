@@ -1,0 +1,41 @@
+@startuml
+title UML sequence behaviour — Dry run
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "EmitCommand" as cmd
+end box
+box "Backend — Augur Infrastructure (Emission / file system)" #FFF4E5
+  participant "EmissionPipeline" as pipe
+  participant "IEmitter" as emitter
+  participant "OutputDirectoryGuard" as guard
+  participant "DryRunLister" as lister
+  database "Output directory" as out
+end box
+
+dev -> cmd : augur emit --plan plan.json --out out --dry-run
+cmd -> pipe : Emit(plan, "out", force, dryRun = true)
+pipe -> emitter : Emit(EmissionContext)
+emitter --> pipe : FileSet
+pipe -> guard : Check(fileSet, "out") (L2-045)
+guard --> pipe : ok
+pipe -> lister : List(fileSet, "out", stdout) (L2-035)
+lister -> out : Exists(path) for each file (read-only)
+out --> lister : exists / missing
+lister --> dev : sorted relative paths, one per line;\n"(overwrite)" where the file exists
+pipe --> cmd : EmissionResult (0 files written)
+cmd --> dev : exit 0; no output files, no lockfile, no staging directory (L2-035)
+@enduml

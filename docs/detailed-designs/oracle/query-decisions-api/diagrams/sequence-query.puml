@@ -1,0 +1,82 @@
+@startuml
+title UML sequence behaviour — Query the Decisions API
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "PlanCommand" as cmd
+  participant "ConsoleReporter" as rep
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "TreeEvaluator" as eval
+end box
+box "Backend — Augur Infrastructure (Oracle / file system)" #FFF4E5
+  participant "DecisionsApiOracle" as api
+  participant "DisclosureNotice" as notice
+  participant "RetryPolicy" as retry
+  participant "ApiKeyProvider" as key
+  participant "DecisionsResponseParser" as parser
+end box
+participant "OpenAI Decisions API" as openai
+
+dev -> cmd : augur plan --spec spec.md --image ui.png
+cmd -> api : construct with BaseUrlPolicy.Resolve(AUGUR_OPENAI_BASE_URL) (L2-042)
+alt base URL not https and host not loopback
+  api --> cmd : UsageException
+  cmd --> dev : error: ... (exit 2)
+end
+cmd -> eval : EvaluateAsync(input, overrides)
+eval -> api : AnswerAsync(input, pending requests)
+api -> notice : WriteOnce(host, [spec.md 4 096 B, ui.png 182 334 B]) (L2-043)
+notice -> rep : stderr at verbosity normal+
+api -> api : DecisionsRequestBuilder.Build(input, requests, model) (L2-016)
+api -> retry : ExecuteAsync(send)
+loop attempt 1..4 (3 retries) (L2-017)
+  retry -> key : GetKey() on first attempt (L2-041)
+  alt OPENAI_API_KEY unset
+    key --> retry : UsageException
+    retry --> cmd : propagates
+    cmd --> dev : error: OPENAI_API_KEY is not set (exit 2)
+  end
+  retry -> openai : POST /v1/decisions, Authorization: Bearer <redacted>, per-attempt timeout (L2-018)
+  alt 200 OK
+    openai --> retry : answers JSON
+    retry --> api : response
+  else 408 / 429 / 5xx / network error / timeout
+    openai --> retry : transient failure
+    retry -> retry : wait max(Retry-After, min(20 s, 1 s × 2^(n−1)) + jitter)
+  else 400 / 401 / 403 / 404 / 422
+    openai --> retry : rejected
+    retry --> api : DecisionsApiException(status, x-request-id)
+    api --> cmd : propagates
+    cmd --> dev : error: ... (exit 4); key never printed (L2-041)
+  end
+end
+opt retries exhausted
+  retry --> api : DecisionsApiException(last status, x-request-id)
+  api --> cmd : propagates
+  cmd --> dev : error: ... (exit 4)
+end
+api -> parser : Parse(response, requests)
+alt answer missing, unknown name, or wrong shape
+  parser --> api : DecisionsApiException
+  api --> cmd : propagates
+  cmd --> dev : error: invalid response (exit 4)
+else well-formed
+  parser --> api : DecisionAnswer per request, Source = Api
+end
+api --> eval : answers
+eval --> cmd : DecisionState
+@enduml

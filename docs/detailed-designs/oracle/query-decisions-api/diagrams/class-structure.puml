@@ -1,0 +1,109 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Query the Decisions API
+
+interface IDecisionOracle {
+  +AnswerAsync(input: SpecificationInput, requests: IReadOnlyList<DecisionRequest>, ct: CancellationToken): Task<IReadOnlyList<DecisionAnswer>>
+}
+
+class DecisionsApiOracle {
+  -string Model
+  +AnswerAsync(input, requests, ct): Task<IReadOnlyList<DecisionAnswer>>
+}
+
+class DecisionsRequestBuilder {
+  +Build(input: SpecificationInput, requests: IReadOnlyList<DecisionRequest>, model: string): DecisionsRequestBody
+}
+
+class DecisionsRequestBody {
+  +string Model
+  +IReadOnlyList<UserMessage> Input
+  +IReadOnlyList<QuestionBody> Questions
+}
+
+class QuestionBody {
+  +string Name
+  +string Type
+  +string Instructions
+  +IReadOnlyList<ChoiceBody>? Choices
+  +IReadOnlyList<LevelBody>? Levels
+}
+
+class DecisionsResponseParser {
+  +Parse(response: HttpResponseMessage, requests: IReadOnlyList<DecisionRequest>): IReadOnlyList<DecisionAnswer>
+}
+
+class RetryPolicy {
+  +int MaxRetries = 3
+  +TimeSpan BaseDelay = 1 s
+  +TimeSpan MaxDelay = 20 s
+  +ExecuteAsync(send: Func<CancellationToken, Task<HttpResponseMessage>>, ct: CancellationToken): Task<HttpResponseMessage>
+  -IsTransient(status: HttpStatusCode?): bool
+  -Delay(attempt: int, retryAfter: TimeSpan?): TimeSpan
+}
+
+class AttemptTimeout {
+  +TimeSpan Duration = 30 s
+  +Link(ct: CancellationToken): CancellationTokenSource
+}
+
+class ApiKeyProvider {
+  -string? cached
+  +GetKey(): string
+}
+
+class AuthorizationHandler {
+  #SendAsync(request: HttpRequestMessage, ct: CancellationToken): Task<HttpResponseMessage>
+}
+
+class RequestLogger {
+  #SendAsync(request: HttpRequestMessage, ct: CancellationToken): Task<HttpResponseMessage>
+}
+
+class BaseUrlPolicy {
+  +Uri Default = https://api.openai.com
+  +Resolve(env: string?): Uri
+  -IsLoopback(host: string): bool
+}
+
+class DisclosureNotice {
+  -bool written
+  +WriteOnce(host: string, files: IReadOnlyList<(string Name, long Bytes)>): void
+}
+
+class DecisionsApiException {
+  +HttpStatusCode? Status
+  +string? RequestId
+}
+
+class DecisionAnswer {
+  +string DecisionId
+  +DecisionSource Source = Api
+}
+
+IDecisionOracle <|.. DecisionsApiOracle
+DecisionsApiOracle ..> DecisionsRequestBuilder : builds body
+DecisionsRequestBuilder ..> DecisionsRequestBody : produces
+DecisionsRequestBody "1" *-- "1..*" QuestionBody
+DecisionsApiOracle ..> RetryPolicy : sends through
+RetryPolicy ..> AttemptTimeout : per attempt
+DecisionsApiOracle ..> DecisionsResponseParser : parses
+DecisionsResponseParser ..> DecisionAnswer : produces
+DecisionsResponseParser ..> DecisionsApiException : throws on malformed
+RetryPolicy ..> DecisionsApiException : throws after final failure
+AuthorizationHandler ..> ApiKeyProvider : GetKey()
+AuthorizationHandler --> RequestLogger : inner handler
+DecisionsApiOracle ..> BaseUrlPolicy : BaseAddress
+DecisionsApiOracle ..> DisclosureNotice : before first request
+@enduml

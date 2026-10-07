@@ -1,0 +1,52 @@
+@startuml
+title UML sequence behaviour — Cancel a run
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "Program" as prog
+  participant "CancellationSource" as cancel
+  participant "ErrorReporter" as err
+  participant "GenerateCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "TreeEvaluator" as eval
+end box
+box "Backend — Augur Infrastructure (Oracle / Emission)" #FFF4E5
+  participant "DecisionsApiOracle" as oracle
+  participant "StagingDirectory" as staging
+end box
+participant "OpenAI Decisions API" as openai
+
+dev -> prog : augur generate ...
+prog -> cancel : Register() (SIGINT, SIGTERM)
+prog -> err : Run(handler, cancel.Token)
+err -> cmd : Invoke(options, ct)
+cmd -> eval : EvaluateAsync(..., ct)
+eval -> oracle : AnswerAsync(..., ct)
+oracle -> openai : POST /v1/decisions (ct)
+dev -> cancel : Ctrl+C (SIGINT) or SIGTERM
+cancel -> cancel : Cancel token; mark key press handled (L2-004)
+openai --> oracle : request aborted
+oracle --> eval : OperationCanceledException
+eval --> cmd : OperationCanceledException
+alt emission already staging files
+  cmd -> staging : Dispose() deletes staging directory; output directory unchanged (L2-004)
+end
+cmd --> err : OperationCanceledException
+err -> err : Error("error: cancelled"); no lockfile or plan written
+err --> prog : ExitCode.Cancelled
+prog --> dev : exit 130 within 2 s
+@enduml

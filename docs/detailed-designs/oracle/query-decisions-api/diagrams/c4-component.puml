@@ -1,0 +1,32 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Query the Decisions API
+
+Container(core, "Augur.Core", ".NET library", "TreeEvaluator via IDecisionOracle")
+Container_Boundary(oracle, "Augur.Oracle.OpenAI") {
+  Component(api, "DecisionsApiOracle", "IDecisionOracle", "One request per batch; Source = Api")
+  Component(builder, "DecisionsRequestBuilder", "Mapper", "model / input / questions; name = decision id (L2-016)")
+  Component(retry, "RetryPolicy", "Policy", "3 retries, backoff with jitter, Retry-After (L2-017)")
+  Component(timeout, "AttemptTimeout", "Policy", "Per-attempt limit from --timeout (L2-018)")
+  Component(parser, "DecisionsResponseParser", "Mapper", "answers -> DecisionAnswer; malformed -> exit 4")
+  Component(key, "ApiKeyProvider", "Provider", "OPENAI_API_KEY, lazy, never logged (L2-041)")
+  Component(auth, "AuthorizationHandler", "DelegatingHandler", "Sets Authorization: Bearer")
+  Component(baseurl, "BaseUrlPolicy", "Policy", "https only; http for loopback (L2-042)")
+  Component(notice, "DisclosureNotice", "Reporter", "Host, file names, sizes before first request (L2-043)")
+  Component(logger, "RequestLogger", "DelegatingHandler", "Diagnostic: path, status, duration, x-request-id")
+}
+System_Ext(openai, "OpenAI Decisions API", "POST /v1/decisions")
+
+Rel(core, api, "AnswerAsync(input, requests)")
+Rel(api, builder, "Build(input, requests, model)")
+Rel(api, notice, "WriteOnce(host, files)")
+Rel(api, retry, "ExecuteAsync(send)")
+Rel(retry, timeout, "Linked token per attempt")
+Rel(retry, auth, "SendAsync")
+Rel(auth, key, "GetKey()")
+Rel(auth, logger, "SendAsync")
+Rel(logger, openai, "POST /v1/decisions", "HTTPS / JSON")
+Rel(api, parser, "Parse(response, requests)")
+Rel(api, baseurl, "BaseAddress")
+@enduml

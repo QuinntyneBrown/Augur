@@ -1,0 +1,15 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Emit a .NET solution
+
+Person(dev, "Developer", "Runs augur emit against a plan")
+System(augur, "Augur CLI", "Renders the .NET solution from embedded templates")
+System(emitted, "Emitted {Name} solution", ".NET 10 API, optional worker, tests")
+System_Ext(oidc, "OpenID Connect authority", "Issues the JWTs the emitted API validates")
+
+Rel(dev, augur, "Runs augur emit --plan --out", "terminal")
+Rel(augur, emitted, "Writes solution files to the output directory", "file system")
+Rel(dev, emitted, "Builds, tests, and runs", "dotnet CLI")
+Rel(emitted, oidc, "Validates bearer tokens against", "HTTPS / OIDC discovery")
+@enduml

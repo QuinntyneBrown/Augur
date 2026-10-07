@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Replay decisions from the lockfile
+
+Person(dev, "Developer", "Re-runs augur plan over an unchanged specification")
+System(augur, "Augur CLI", "Reuses recorded answers; asks only for the rest")
+System_Ext(openai, "OpenAI Decisions API", "Reached only for missing, stale, or refreshed decisions")
+
+Rel(dev, augur, "Runs augur plan [--refresh] [--offline]", "terminal")
+Rel(augur, openai, "Requests for non-reusable decisions only; none when --offline", "HTTPS / JSON")
+@enduml

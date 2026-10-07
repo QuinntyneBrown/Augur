@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Answer from a script
+
+Container_Boundary(cli, "Augur.Cli") {
+  Component(opt, "OracleScriptOption", "System.CommandLine option", "--oracle-script <path>")
+  Component(plancmd, "PlanCommand", "Command handler", "Selects ScriptedOracle; maps exceptions to exit codes")
+}
+Container_Boundary(script, "Augur.Oracle.Scripted") {
+  Component(oracle, "ScriptedOracle", "IDecisionOracle", "Looks up each decision id; Source = Script (L2-038)")
+  Component(reader, "AnswerScriptReader", "Parser", "JSON -> AnswerScript; parse error -> exit 2")
+  Component(answers, "AnswerScript", "Immutable map", "id -> raw result")
+  Component(mapper, "ScriptedAnswerMapper", "Mapper", "Raw result -> DecisionAnswer by decision type")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(evaluator, "TreeEvaluator", "Orchestrator", "Calls the oracle once per level")
+  Component(resolver, "DecisionResolver", "Rules", "Same thresholds and checks as API answers")
+}
+
+Rel(opt, plancmd, "path")
+Rel(plancmd, oracle, "Constructs with path")
+Rel(oracle, reader, "Read(path)")
+Rel(reader, answers, "Produces")
+Rel(evaluator, oracle, "AnswerAsync(input, requests)")
+Rel(oracle, answers, "Lookup(id)")
+Rel(oracle, mapper, "Map(rawResult, definition)")
+Rel(evaluator, resolver, "Resolve(definition, answer)")
+@enduml

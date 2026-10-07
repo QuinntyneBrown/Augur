@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Emitted shell adapts to viewport and manages focus
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "End user" as user
+participant "Browser" as browser
+box "Frontend — {name} web (Angular)" #E0F2FE
+  participant "AppShellComponent" as shell
+  participant "BreakpointService" as bp
+  participant "Router" as router
+  participant "RouteFocusService" as focus
+  participant "NotFoundComponent (lazy)" as notfound
+end box
+
+user -> browser : Open / at 375 px
+browser -> shell : bootstrap
+shell -> bp : isCompact()
+bp --> shell : true (width < 768 px) (L2-055)
+shell -> browser : Render skip link, header with menu button, nav hidden, single-column main, footer
+user -> browser : Press Tab
+browser -> shell : focus first focusable
+shell --> browser : "Skip to main content" link visible and focused (L2-056)
+user -> browser : Activate menu button (44 x 44 px target)
+browser -> shell : toggleNav()
+shell -> browser : nav visible; aria-expanded = true
+user -> browser : Activate "Orders" link
+shell -> router : navigate('/orders')
+shell -> shell : navOpen = false (collapse after navigation)
+router -> focus : NavigationEnd
+focus -> browser : document.title = route title; focus top-level h1 (L2-056)
+
+== Resize ==
+user -> browser : Resize to 1200 px
+browser -> bp : matchMedia change
+bp --> shell : isCompact = false
+shell -> browser : nav visible without interaction; menu button hidden (L2-055)
+
+== Unknown URL ==
+user -> browser : Navigate to /does-not-exist
+browser -> router : navigate('/does-not-exist')
+router -> notfound : loadComponent() — separate chunk (L2-057)
+notfound --> browser : Not-found page; document.title updated; focus on heading
+@enduml

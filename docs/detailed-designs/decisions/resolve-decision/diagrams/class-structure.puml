@@ -1,0 +1,127 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Resolve a decision
+
+abstract class DecisionDefinition {
+  +string Id
+  +string Instructions
+  +string Default
+  +WhenClause? When
+}
+
+class PredicateDefinition {
+  +double UpperThreshold = 0.80
+  +double LowerThreshold = 0.20
+}
+
+class ChoiceDefinition {
+  +IReadOnlyList<ChoiceOption> Options
+  +double MinConfidence = 0.70
+}
+
+class ScoreDefinition {
+  +IReadOnlyList<ScoreLevel> Levels
+  +double MinConfidence = 0.70
+  +double CutOff
+  +string ResolvedId
+}
+
+class ChoiceOption {
+  +string Value
+  +string Description
+}
+
+class ScoreLevel {
+  +string Label
+  +string Description
+}
+
+enum DecisionSource {
+  Api
+  Lockfile
+  Override
+  Fallback
+  User
+  Script
+}
+
+class DecisionAnswer {
+  +string DecisionId
+  +DecisionSource Source
+  +PredicateResult? Predicate
+  +ChoiceResult? Choice
+  +ScoreResult? Score
+}
+
+class PredicateResult {
+  +double Probability
+}
+
+class ChoiceResult {
+  +string Choice
+  +IReadOnlyList<OptionProbability> Probabilities
+  +double Confidence
+}
+
+class ScoreResult {
+  +double Score
+  +IReadOnlyList<LevelProbability> Probabilities
+  +double Confidence
+}
+
+class ResolverOptions {
+  +double? MinConfidenceOverride
+}
+
+class AnswerValidator {
+  +Validate(definition: DecisionDefinition, answer: DecisionAnswer): void
+}
+
+class InvalidAnswerException {
+  +string DecisionId
+  +string Value
+  +DecisionSource Source
+}
+
+class DecisionResolver {
+  +Resolve(definition: DecisionDefinition, answer: DecisionAnswer): Resolution
+}
+
+abstract class Resolution
+class Resolved {
+  +string Value
+  +DecisionAnswer Raw
+}
+class LowConfidence {
+  +DecisionAnswer Raw
+}
+
+DecisionDefinition <|-- PredicateDefinition
+DecisionDefinition <|-- ChoiceDefinition
+DecisionDefinition <|-- ScoreDefinition
+ChoiceDefinition "1" *-- "2..*" ChoiceOption
+ScoreDefinition "1" *-- "2..*" ScoreLevel
+DecisionAnswer --> DecisionSource
+DecisionAnswer o-- PredicateResult
+DecisionAnswer o-- ChoiceResult
+DecisionAnswer o-- ScoreResult
+Resolution <|-- Resolved
+Resolution <|-- LowConfidence
+DecisionResolver ..> AnswerValidator : validates first
+DecisionResolver ..> ResolverOptions : reads
+DecisionResolver ..> DecisionDefinition : applies thresholds of
+DecisionResolver ..> DecisionAnswer : reads
+DecisionResolver ..> Resolution : returns
+AnswerValidator ..> InvalidAnswerException : throws
+@enduml

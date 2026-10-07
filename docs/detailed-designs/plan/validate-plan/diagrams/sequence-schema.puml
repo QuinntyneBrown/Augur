@@ -1,0 +1,39 @@
+@startuml
+title UML sequence behaviour — Print the plan schema
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "SchemaCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "PlanSchemaGenerator" as gen
+  participant "DecisionCatalog" as catalog
+  participant "SolutionName" as name
+  participant "CanonicalJson" as canon
+end box
+
+dev -> cmd : augur schema plan
+cmd -> gen : Generate(catalog) (L2-029)
+gen -> catalog : decisions, answer sets, CatalogVersion
+catalog --> gen : definitions
+gen -> name : Pattern
+name --> gen : regex
+gen -> gen : $schema 2020-12; planVersion const 1;\ncatalogVersion const; decisions.<id>.value enum (no "other");\nsource enum; additionalProperties false
+gen --> cmd : JsonDocument
+cmd -> canon : Serialize(schema)
+canon --> cmd : canonical JSON
+cmd --> dev : schema on stdout (exit 0)
+@enduml

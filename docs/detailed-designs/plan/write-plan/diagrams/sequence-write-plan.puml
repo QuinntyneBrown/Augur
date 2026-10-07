@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Write the generation plan
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "NameOption" as nameopt
+  participant "PlanCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "SolutionName" as name
+  participant "TreeEvaluator" as eval
+  participant "PlanBuilder" as builder
+  participant "PlanWriter" as writer
+end box
+box "Backend — Augur Infrastructure (Emission / file system)" #FFF4E5
+  database "plan JSON" as file
+end box
+
+dev -> nameopt : augur plan --spec spec.md --name Contoso.Orders [--out plan.json]
+nameopt -> name : Parse("Contoso.Orders") (L2-027)
+alt invalid name
+  name --> nameopt : throw UsageException
+  nameopt --> dev : error: naming rule (exit 2)
+else valid name
+  name --> nameopt : SolutionName
+  nameopt -> cmd : invoke handler
+  cmd -> eval : EvaluateAsync(input, overrides)
+  eval --> cmd : DecisionState (all Resolved or Skipped)
+  cmd -> cmd : Write lockfile
+  cmd -> builder : Build(state, name, inputHash, catalogVersion)
+  builder --> cmd : GenerationPlan (skipped decisions omitted) (L2-026)
+  cmd -> writer : Write(plan, outPath)
+  alt --out given
+    writer -> file : canonical JSON via temp file + rename (L2-026)
+    file --> writer : written
+    writer --> cmd : done; stdout empty
+  else no --out
+    writer --> dev : canonical JSON on stdout (L2-026)
+  end
+  cmd --> dev : summary on stderr; exit 0
+end
+@enduml

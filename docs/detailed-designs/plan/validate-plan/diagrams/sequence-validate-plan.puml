@@ -1,0 +1,58 @@
+@startuml
+title UML sequence behaviour — Validate a plan before emission
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "EmitCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "PlanReader" as reader
+  participant "PlanValidator" as val
+  participant "DecisionCatalog" as catalog
+  participant "SolutionName" as name
+end box
+box "Backend — Augur Infrastructure (Emission / file system)" #FFF4E5
+  database "plan JSON" as file
+  participant "EmissionPipeline" as pipe
+end box
+
+dev -> cmd : augur emit --plan plan.json --out out
+cmd -> reader : Read("plan.json")
+reader -> file : size check (<= 1 MiB), strict parse
+alt file too large or not valid JSON
+  file --> reader : error
+  reader --> cmd : throw UsageException(path, position)
+  cmd --> dev : error: ... (exit 2)
+else parsed
+  file --> reader : GenerationPlan
+  reader --> cmd : GenerationPlan
+  cmd -> val : Validate(plan, catalog) (L2-028)
+  val -> val : planVersion supported; catalogVersion equals installed
+  val -> name : Parse(solutionName)
+  name --> val : ok or violation
+  val -> catalog : definitions, answer sets, when clauses
+  catalog --> val : definitions
+  val -> val : unknown ids; value in answer set and not "other";\nwhen applicability; required decisions present
+  val --> cmd : PlanValidationResult
+  alt violations present
+    cmd --> dev : error: one line per violation with JSON path (exit 2); nothing written
+  else valid
+    cmd -> pipe : Emit(plan, outDir, force, dryRun)
+    pipe --> cmd : result
+    cmd --> dev : summary (exit 0)
+  end
+end
+@enduml

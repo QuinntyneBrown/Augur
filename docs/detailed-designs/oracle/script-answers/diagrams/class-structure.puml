@@ -1,0 +1,63 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Answer from a script
+
+interface IDecisionOracle {
+  +AnswerAsync(input: SpecificationInput, requests: IReadOnlyList<DecisionRequest>, ct: CancellationToken): Task<IReadOnlyList<DecisionAnswer>>
+}
+
+class ScriptedOracle {
+  -AnswerScript script
+  +AnswerAsync(input, requests, ct): Task<IReadOnlyList<DecisionAnswer>>
+}
+
+class AnswerScriptReader {
+  +Read(path: string): AnswerScript
+}
+
+class AnswerScript {
+  +IReadOnlyDictionary<string, JsonElement> Answers
+  +bool TryGet(id: string, out raw: JsonElement)
+}
+
+class ScriptedAnswerMapper {
+  +Map(raw: JsonElement, definition: DecisionDefinition): DecisionAnswer
+}
+
+class DecisionAnswer {
+  +string DecisionId
+  +DecisionSource Source = Script
+  +PredicateResult? Predicate
+  +ChoiceResult? Choice
+  +ScoreResult? Score
+}
+
+class MissingScriptedAnswerException {
+  +IReadOnlyList<string> DecisionIds
+}
+
+class UsageException {
+  +string Message
+}
+
+IDecisionOracle <|.. ScriptedOracle
+ScriptedOracle ..> AnswerScriptReader : loads at construction
+AnswerScriptReader ..> AnswerScript : produces
+AnswerScriptReader ..> UsageException : throws on invalid JSON
+ScriptedOracle "1" *-- "1" AnswerScript
+ScriptedOracle ..> ScriptedAnswerMapper : maps each id
+ScriptedAnswerMapper ..> DecisionAnswer : produces
+ScriptedAnswerMapper ..> UsageException : throws on shape mismatch
+ScriptedOracle ..> MissingScriptedAnswerException : throws for missing ids
+@enduml

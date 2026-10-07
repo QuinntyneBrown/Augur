@@ -1,0 +1,71 @@
+@startuml
+title UML sequence behaviour — Emitted application guards a protected route
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "End user" as user
+participant "Browser" as browser
+box "Frontend — {name} web (Angular)" #E0F2FE
+  participant "Router" as router
+  participant "authGuard" as guard
+  participant "AuthService" as auth
+  participant "authInterceptor" as interceptor
+  participant "HealthApi" as api
+end box
+box "Backend — {Name}.Api (ASP.NET Core)" #D1FADF
+  participant "JwtBearer middleware" as jwt
+end box
+participant "OpenID Connect authority" as oidc
+
+user -> browser : Navigate to /orders
+browser -> router : navigate('/orders')
+router -> guard : canActivate(route)
+guard -> auth : isAuthenticated()
+alt not authenticated (L2-054)
+  auth --> guard : false
+  guard -> auth : signIn()
+  auth -> auth : Generate code_verifier; code_challenge = S256(verifier); keep verifier in sessionStorage
+  auth -> browser : Redirect to {authority}/authorize?response_type=code&client_id=...&code_challenge=...&code_challenge_method=S256
+  browser -> oidc : GET /authorize
+  oidc --> browser : Sign-in page; then 302 to /auth/callback?code=...
+  browser -> router : navigate('/auth/callback')
+  router -> auth : handleCallback(code)
+  auth -> oidc : POST /token (code, code_verifier) — no client secret
+  oidc --> auth : access_token, id_token
+  auth -> auth : Hold tokens in memory / sessionStorage; never localStorage
+  auth -> router : navigate('/orders')
+  guard --> router : false (protected component never rendered this cycle)
+else authenticated
+  auth --> guard : true
+  guard --> router : true
+  router --> browser : Render OrdersComponent
+end
+
+== API call with token ==
+browser -> api : load()
+api -> interceptor : GET /api/health
+interceptor -> interceptor : URL starts with apiBaseUrl -> add Authorization: Bearer <token>
+interceptor -> jwt : GET /api/health (Authorization header)
+jwt --> interceptor : 200
+interceptor --> api : response
+
+== External call ==
+api -> interceptor : GET https://example.org/data
+interceptor -> interceptor : URL outside apiBaseUrl -> no Authorization header (L2-054)
+
+== Expired token ==
+interceptor -> jwt : GET /api/orders (stale token)
+jwt --> interceptor : 401
+interceptor -> auth : signIn() (L2-054)
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Emit an Angular workspace
+
+Person(dev, "Developer", "Runs augur emit")
+Person(user, "End user", "Browser")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "EmitCommand")
+  Container(emission, "Augur.Emission", ".NET library", "IEmitter, FileSet, staging pipeline")
+  Container(angular, "Augur.Emission.Angular", ".NET library", "AngularWorkspaceEmitter, templates, embedded package-lock.json")
+}
+System_Boundary(emitted, "Emitted {name} workspace") {
+  Container(spa, "{name} browser application", "Angular, TypeScript", "App shell, routes, state, auth")
+  Container(ssr, "{name} SSR server", "Node.js, @angular/ssr", "Server bundle (server-side-rendering=true)")
+  Container(tests, "Unit tests", "ng test", "Component and service specs")
+}
+System_Ext(oidc, "OpenID Connect authority", "Token issuer")
+
+Rel(dev, cli, "augur emit --plan plan.json --out ./out", "terminal")
+Rel(cli, emission, "Runs pipeline")
+Rel(emission, angular, "Emit(context)", "IEmitter")
+Rel(angular, emission, "FileSet")
+Rel(emission, emitted, "Stages and moves files", "file system")
+Rel(user, spa, "Uses", "HTTPS")
+Rel(ssr, spa, "Pre-renders and hydrates")
+Rel(spa, oidc, "Authorization Code + PKCE", "HTTPS")
+Rel(tests, spa, "Exercises")
+@enduml

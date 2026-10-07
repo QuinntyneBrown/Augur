@@ -1,0 +1,80 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Replay decisions from the lockfile
+
+interface IDecisionOracle {
+  +AnswerAsync(input: SpecificationInput, requests: IReadOnlyList<DecisionRequest>, ct: CancellationToken): Task<IReadOnlyList<DecisionAnswer>>
+}
+
+class ReplayingOracle {
+  -Lockfile? previous
+  -string inputHash
+  -RefreshSet refresh
+  -IDecisionOracle inner
+  +AnswerAsync(input, requests, ct): Task<IReadOnlyList<DecisionAnswer>>
+  -IsReusable(request: DecisionRequest): bool
+}
+
+class RefreshSet {
+  +bool All
+  +IReadOnlySet<string> Ids
+  +Matches(id: string): bool
+}
+
+class OfflineOracle {
+  +AnswerAsync(input, requests, ct): Task<IReadOnlyList<DecisionAnswer>>
+}
+
+class DecisionsApiOracle
+class ScriptedOracle
+
+class Lockfile {
+  +string InputHash
+  +LockfileEntry? Find(id: string)
+}
+
+class LockfileEntry {
+  +string Id
+  +string QuestionHash
+  +DecisionSource Source
+  +DecisionAnswer Raw
+  +DateTimeOffset ResolvedAt
+}
+
+class DecisionAnswer {
+  +string DecisionId
+  +DecisionSource Source
+  +DateTimeOffset? ReplayedAt
+}
+
+class QuestionHasher {
+  +Hash(definition: DecisionDefinition): string
+}
+
+class UnresolvedDecisionsException {
+  +IReadOnlyList<string> DecisionIds
+}
+
+IDecisionOracle <|.. ReplayingOracle
+IDecisionOracle <|.. OfflineOracle
+IDecisionOracle <|.. DecisionsApiOracle
+IDecisionOracle <|.. ScriptedOracle
+ReplayingOracle o-- IDecisionOracle : inner
+ReplayingOracle --> Lockfile : previous
+ReplayingOracle --> RefreshSet : bypass rules
+ReplayingOracle ..> QuestionHasher : current question hash
+Lockfile "1" *-- "*" LockfileEntry
+ReplayingOracle ..> DecisionAnswer : Source = Lockfile for reused entries
+OfflineOracle ..> UnresolvedDecisionsException : throws for any request
+@enduml

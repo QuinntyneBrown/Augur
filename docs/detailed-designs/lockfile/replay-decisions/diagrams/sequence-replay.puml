@@ -1,0 +1,68 @@
+@startuml
+title UML sequence behaviour — Replay decisions from the lockfile
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "PlanCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "TreeEvaluator" as eval
+  participant "ReplayingOracle" as replay
+  participant "Lockfile (previous)" as lock
+end box
+box "Backend — Augur Infrastructure (Oracle / file system)" #FFF4E5
+  participant "Inner oracle\n(DecisionsApiOracle | ScriptedOracle | OfflineOracle)" as inner
+end box
+participant "OpenAI Decisions API" as openai
+
+dev -> cmd : augur plan --spec spec.md [--refresh [id]] [--offline]
+alt --offline together with --refresh
+  cmd --> dev : error: options conflict (exit 2) (L2-037)
+end
+cmd -> replay : construct(previous, inputHash, refreshSet, inner)
+cmd -> eval : EvaluateAsync(input, overrides)
+eval -> replay : AnswerAsync(input, pending requests)
+loop for each request
+  replay -> lock : Find(id)
+  alt lockfile inputHash == current inputHash\nand entry.questionHash == current questionHash\nand not refreshSet.Matches(id) (L2-023)
+    lock --> replay : entry
+    replay -> replay : DecisionAnswer(entry.Raw, Source = Lockfile, ReplayedAt = entry.ResolvedAt)
+  else absent, stale, or refreshed (L2-024)
+    replay -> replay : add to forward list
+  end
+end
+alt forward list empty
+  replay -> replay : inner not called; no request counted
+else forward list non-empty
+  replay -> inner : AnswerAsync(input, forward list)
+  alt inner is OfflineOracle (L2-037)
+    inner --> replay : UnresolvedDecisionsException(ids)
+    replay --> eval : propagates
+    eval --> cmd : propagates
+    cmd --> dev : one stderr line per id; exit 3
+  else inner is DecisionsApiOracle
+    inner -> openai : POST /v1/decisions (forwarded only)
+    openai --> inner : answers
+    inner --> replay : DecisionAnswer per forwarded request
+  else inner is ScriptedOracle
+    inner --> replay : DecisionAnswer per forwarded request
+  end
+end
+replay --> eval : merged answers in request order
+eval --> cmd : DecisionState (sources: lockfile | api | script | ...)
+cmd -> cmd : LockfileBuilder keeps original source and ResolvedAt for replayed entries
+cmd --> dev : plan on stdout; summary reports N from lockfile
+@enduml

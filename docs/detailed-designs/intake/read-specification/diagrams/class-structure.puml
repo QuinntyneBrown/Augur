@@ -1,0 +1,60 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Read a specification
+
+class SpecificationReader {
+  +{static} int MaxBytes = 262144
+  +Read(pathOrDash: string, stdin: Stream): string
+}
+
+class ImageFile {
+  +{static} int MaxBytes = 10485760
+  +string Path
+  +ReadOnlyMemory<byte> Bytes
+  +string MediaType
+  +{static} Load(path: string): ImageFile
+  +ToDataUrl(): string
+}
+
+class ImageSignature {
+  +{static} Detect(leading: ReadOnlySpan<byte>): string?
+}
+
+class SpecificationInput {
+  +string Text
+  +IReadOnlyList<ImageFile> Images
+  +string InputHash
+}
+
+class InputHasher {
+  +{static} Hash(text: string, images: IReadOnlyList<ImageFile>): string
+}
+
+class PathResolver {
+  +Resolve(userPath: string): ResolvedPath
+}
+
+class UsageException {
+  +ExitCode ExitCode = InvalidUsage
+  +string Message
+}
+
+SpecificationInput "1" *-- "0..4" ImageFile : ordered
+ImageFile ..> ImageSignature : media type from
+SpecificationReader ..> PathResolver : resolves
+ImageFile ..> PathResolver : resolves
+InputHasher ..> SpecificationInput : computes InputHash for
+SpecificationReader ..> UsageException : throws
+ImageFile ..> UsageException : throws
+@enduml

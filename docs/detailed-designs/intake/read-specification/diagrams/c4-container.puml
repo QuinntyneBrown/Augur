@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Read a specification
+
+Person(dev, "Developer", "Supplies specification and images")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "SpecOption and ImageOption; exit 2 on invalid input")
+  Container(core, "Augur.Core", ".NET library", "SpecificationReader, ImageFile, InputHasher")
+  Container(oracle, "Augur.Oracle.OpenAI", ".NET library", "Encodes SpecificationInput as request input")
+  ContainerDb(files, "Specification and image files", "Local file system / stdin", "UTF-8 text; PNG, JPEG, WEBP")
+}
+System_Ext(openai, "OpenAI Decisions API", "Answers questions about the input")
+
+Rel(dev, cli, "augur plan --spec spec.md --image ui.png", "terminal")
+Rel(cli, core, "Read and validate")
+Rel(core, files, "Reads bytes", "File I/O")
+Rel(core, oracle, "SpecificationInput (text, images, hash)")
+Rel(oracle, openai, "POST /v1/decisions with inline images", "HTTPS / JSON")
+@enduml

@@ -1,0 +1,67 @@
+@startuml
+title UML sequence behaviour — Emitted API enforces authentication
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Operator" as ops
+participant "HTTP client" as client
+box "Backend — {Name}.Api (ASP.NET Core)" #D1FADF
+  participant "Program" as program
+  participant "AuthenticationStartupValidator" as startup
+  participant "JwtBearer middleware" as jwt
+  participant "Authorization middleware" as authz
+  participant "HealthEndpoint" as health
+  participant "Protected endpoint" as endpoint
+end box
+box "Backend — {Name} Application and Domain" #ECFDF3
+  participant "Handler" as handler
+end box
+participant "OpenID Connect authority" as oidc
+
+== Startup ==
+ops -> program : dotnet run (ASPNETCORE_ENVIRONMENT=Production)
+program -> startup : Validate(AuthenticationOptions, env)
+alt Authority or Audience missing outside Development (L2-046)
+  startup --> program : throw "Authentication:Authority is not configured"
+  program --> ops : process exits non-zero
+else configured
+  startup --> program : ok
+  program -> jwt : AddJwtBearer(Authority, Audience)
+  jwt -> oidc : Fetch discovery document and signing keys
+  oidc --> jwt : JWKS
+  program -> program : UseHttpsRedirection(); UseHsts() outside Development
+  program -> program : Fallback policy: RequireAuthenticatedUser()
+  program -> health : Map GET /api/health .AllowAnonymous()
+end
+
+== Request without token ==
+client -> jwt : GET /api/orders (no Authorization header)
+jwt -> authz : No principal
+authz --> client : 401 Unauthorized (L2-046)
+
+== Health check ==
+client -> jwt : GET /api/health
+jwt -> authz : No principal
+authz -> health : AllowAnonymous
+health --> client : 200 {"status":"Healthy"}
+
+== Request with valid token ==
+client -> jwt : GET /api/orders (Authorization: Bearer <jwt>)
+jwt -> jwt : Validate signature, issuer = Authority, audience = Audience, lifetime
+jwt -> authz : Authenticated principal
+authz -> endpoint : Policy satisfied
+endpoint -> handler : Handle(query)
+handler --> endpoint : result
+endpoint --> client : 200 JSON
+@enduml

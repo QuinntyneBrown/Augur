@@ -1,0 +1,34 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Generate end to end
+
+Container_Boundary(cli, "Augur.Cli") {
+  Component(gencmd, "GenerateCommand", "Command handler", "plan then emit, one process")
+  Component(genopts, "GenerateOptions", "Option set", "PlanOptions + EmitOptions reused (L2-036)")
+  Component(planfile, "PlanFileEntry", "FileSet contributor", "Adds <out>/augur.plan.json")
+  Component(clock, "RunClock", "Stopwatch", "Elapsed and per-request overhead (L2-048)")
+  Component(summary, "RunSummary", "Reporter", "Sources, requests, files, elapsed")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(evaluator, "TreeEvaluator", "Orchestrator", "Resolves decisions")
+  Component(lockstore, "LockfileStore", "Store", "Atomic lockfile write")
+  Component(builder, "PlanBuilder", "Mapper", "DecisionState -> GenerationPlan")
+  Component(validator, "PlanValidator", "Rules", "Validates the built plan")
+}
+Container_Boundary(emission, "Augur.Emission") {
+  Component(pipeline, "EmissionPipeline", "Orchestrator", "render -> guard -> policy -> stage -> move")
+  Component(policy, "OutputDirectoryPolicy", "Check", "Pre-checked before any API request")
+}
+
+Rel(gencmd, genopts, "Binds")
+Rel(gencmd, policy, "Pre-check(outDir, force)")
+Rel(gencmd, evaluator, "EvaluateAsync")
+Rel(gencmd, lockstore, "Write(state)")
+Rel(gencmd, builder, "Build(state, name, inputHash, catalogVersion)")
+Rel(gencmd, validator, "Validate(plan)")
+Rel(gencmd, planfile, "Contribute(plan)")
+Rel(gencmd, pipeline, "Emit(plan, outDir, force, dryRun)")
+Rel(gencmd, clock, "Elapsed")
+Rel(gencmd, summary, "Report")
+@enduml

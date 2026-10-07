@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Emit a .NET solution
+
+Container(emission, "Augur.Emission", ".NET library", "Pipeline calling IEmitter")
+Container_Boundary(dotnet, "Augur.Emission.DotNet") {
+  Component(emitter, "DotNetSolutionEmitter", "IEmitter", "Emits {Name}.slnx and projects from the plan")
+  Component(selector, "TemplateGroupSelector", "Mapping", "Plan values -> template groups (L2-030)")
+  Component(engine, "TemplateEngine", "Scriban wrapper", "Renders embedded templates; sandboxed model")
+  Component(projectModel, "ProjectModel / SolutionModel", "Render models", "Project names, references, exact packages")
+  Component(guid, "DeterministicGuid", "Utility", "UUID v5 from SolutionName/ProjectName")
+  Component(packages, "PackageCatalog", "Static table", "Exact NuGet versions (L2-046)")
+  Component(templates, "Embedded templates", "Scriban + static resources", "Architecture/, Persistence/, Auth/, Worker/, Cqrs/, Common/")
+}
+
+Rel(emission, emitter, "Emit(EmissionContext)")
+Rel(emitter, selector, "Select(plan)")
+Rel(emitter, projectModel, "Builds")
+Rel(projectModel, packages, "Resolves exact versions")
+Rel(projectModel, guid, "ProjectId")
+Rel(emitter, engine, "Render(template, model)")
+Rel(engine, templates, "Loads resource")
+Rel(emitter, emission, "FileSet")
+@enduml

@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Query the Decisions API
+
+Person(dev, "Developer", "Runs augur plan; reads the disclosure notice on stderr")
+System(augur, "Augur CLI", "Sends one batched question set per dependency level")
+System_Ext(openai, "OpenAI Decisions API", "POST /v1/decisions; returns typed answers")
+
+Rel(dev, augur, "Runs augur plan with", "terminal")
+Rel(augur, dev, "Disclosure notice: host, file names, byte sizes", "stderr")
+Rel(augur, openai, "Specification, images, and questions", "HTTPS / JSON")
+Rel(openai, augur, "Probabilities, choices, scores", "HTTPS / JSON")
+@enduml

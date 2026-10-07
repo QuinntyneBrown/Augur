@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Answer from a script
+
+Person(dev, "Developer or CI job", "Runs augur plan --oracle-script")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "OracleScriptOption; registers ScriptedOracle")
+  Container(core, "Augur.Core", ".NET library", "TreeEvaluator, DecisionResolver, LockfileStore")
+  Container(script, "Augur.Oracle.Scripted", ".NET library", "ScriptedOracle; no HttpClient")
+  ContainerDb(file, "answers.json", "JSON file", "{ answers: { id: raw result } }")
+  ContainerDb(lock, "decisions.json", "JSON file", "Entries with source = script")
+}
+
+Rel(dev, cli, "--oracle-script answers.json", "terminal")
+Rel(cli, core, "Runs evaluation with ScriptedOracle as inner oracle")
+Rel(core, script, "AnswerAsync(input, requests)", "IDecisionOracle")
+Rel(script, file, "Reads once at construction", "System.Text.Json")
+Rel(core, lock, "Writes resolved entries", "System.Text.Json")
+@enduml

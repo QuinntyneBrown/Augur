@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Read a specification
+
+Container_Boundary(cli, "Augur.Cli") {
+  Component(specopt, "SpecOption", "System.CommandLine option", "--spec <path>; required; '-' = stdin")
+  Component(imgopt, "ImageOption", "System.CommandLine option", "--image <path>; repeatable; max 4")
+  Component(plancmd, "PlanCommand", "Command handler", "Orders reading and hashing")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(reader, "SpecificationReader", "Reader / validator", "Exists; <= 256 KiB; strict UTF-8; non-empty (L2-005)")
+  Component(image, "ImageFile", "Value type", "<= 10 MiB; signature-detected media type (L2-006)")
+  Component(sig, "ImageSignature", "Pure function", "PNG / JPEG / WEBP magic bytes")
+  Component(hasher, "InputHasher", "Pure function", "SHA-256 over LF-normalized text + image bytes")
+  Component(input, "SpecificationInput", "Record", "Text, ordered images, InputHash")
+  Component(paths, "PathResolver", "Utility", "Host-convention paths")
+}
+
+Rel(specopt, plancmd, "path or '-'")
+Rel(imgopt, plancmd, "ordered paths")
+Rel(plancmd, reader, "Read(pathOrStdin)")
+Rel(plancmd, image, "Load(path) per image, in order")
+Rel(reader, paths, "Resolve(path)")
+Rel(image, paths, "Resolve(path)")
+Rel(image, sig, "Detect(leadingBytes)")
+Rel(plancmd, hasher, "Hash(text, images)")
+Rel(plancmd, input, "Builds")
+@enduml

@@ -1,0 +1,102 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Define the catalog
+
+class DecisionCatalog {
+  +{static} DecisionCatalog BuiltIn
+  +int CatalogVersion
+  +IReadOnlyList<DecisionDefinition> Decisions
+  +Get(id: string): DecisionDefinition
+  +{static} Load(): DecisionCatalog
+  +Validate(): void
+}
+
+enum DecisionType {
+  Predicate
+  Choice
+  Score
+}
+
+abstract class DecisionDefinition {
+  +string Id
+  +DecisionType Type
+  +string Instructions
+  +string Default
+  +WhenClause? When
+  +string QuestionHash
+}
+
+class PredicateDefinition {
+  +double UpperThreshold = 0.80
+  +double LowerThreshold = 0.20
+}
+
+class ChoiceDefinition {
+  +IReadOnlyList<ChoiceOption> Options
+  +double MinConfidence = 0.70
+}
+
+class ScoreDefinition {
+  +IReadOnlyList<ScoreLevel> Levels
+  +double MinConfidence = 0.70
+  +double CutOff
+  +string ResolvedId
+}
+
+class ChoiceOption {
+  +string Value
+  +string Description
+}
+
+class ScoreLevel {
+  +string Label
+  +string Description
+}
+
+class WhenClause {
+  +string DependsOn
+  +IReadOnlySet<string> AcceptedValues
+}
+
+class CatalogVersion2 {
+  +{static} Build(): IReadOnlyList<DecisionDefinition>
+}
+
+class CatalogValidator {
+  +Validate(decisions: IReadOnlyList<DecisionDefinition>): void
+}
+
+class InvalidCatalogException {
+  +string DecisionId
+  +string Reason
+}
+
+class QuestionHasher {
+  +{static} Hash(definition: DecisionDefinition): string
+  -{static} CanonicalJson(definition: DecisionDefinition): byte[]
+}
+
+DecisionCatalog "1" *-- "9" DecisionDefinition : owns
+DecisionDefinition --> DecisionType
+DecisionDefinition "1" o-- "0..1" WhenClause
+DecisionDefinition <|-- PredicateDefinition
+DecisionDefinition <|-- ChoiceDefinition
+DecisionDefinition <|-- ScoreDefinition
+ChoiceDefinition "1" *-- "2..*" ChoiceOption
+ScoreDefinition "1" *-- "2..*" ScoreLevel
+DecisionCatalog ..> CatalogVersion2 : built by
+DecisionCatalog ..> CatalogValidator : validated by
+CatalogValidator ..> InvalidCatalogException : throws
+DecisionDefinition ..> QuestionHasher : QuestionHash from
+@enduml

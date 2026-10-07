@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Override a decision
+
+Person(dev, "Developer", "Runs augur plan --set ...")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "SetOption parsing; exit code 2 on usage errors")
+  Container(core, "Augur.Core", ".NET library", "OverrideParser, OverrideSet, TreeEvaluator")
+  Container(oracle, "Augur.Oracle.OpenAI", ".NET library", "Reads OPENAI_API_KEY lazily")
+  ContainerDb(plan, "plan JSON", "JSON file", "Records source = override")
+}
+System_Ext(openai, "OpenAI Decisions API", "Remaining questions")
+
+Rel(dev, cli, "--set id=value (repeatable)", "terminal")
+Rel(cli, core, "Parse and validate overrides; evaluate")
+Rel(core, oracle, "AnswerAsync for pending decisions only")
+Rel(oracle, openai, "POST /v1/decisions", "HTTPS / JSON")
+Rel(core, plan, "Writes overridden values")
+@enduml

@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Record decisions in the lockfile
+
+Person(dev, "Developer", "Runs augur plan; commits decisions.json to source control")
+System(augur, "Augur CLI", "Writes every resolved answer to the lockfile")
+System_Ext(openai, "OpenAI Decisions API", "Source of answers recorded with source = api")
+
+Rel(dev, augur, "Runs augur plan [--lock path]", "terminal")
+Rel(augur, dev, "decisions.json beside the specification", "file system")
+Rel(openai, augur, "Raw answers", "HTTPS / JSON")
+@enduml

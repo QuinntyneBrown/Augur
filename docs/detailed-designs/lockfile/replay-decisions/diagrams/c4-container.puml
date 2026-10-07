@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Replay decisions from the lockfile
+
+Person(dev, "Developer", "Runs augur plan")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "--refresh, --offline; OptionConflictCheck")
+  Container(core, "Augur.Core", ".NET library", "ReplayingOracle, OfflineOracle, RefreshSet, hashers")
+  Container(oracle, "Augur.Oracle.OpenAI", ".NET library", "Inner oracle for online runs")
+  ContainerDb(lock, "decisions.json", "JSON file", "Previous run's entries")
+}
+System_Ext(openai, "OpenAI Decisions API", "Answers forwarded requests")
+
+Rel(dev, cli, "Runs augur plan", "terminal")
+Rel(cli, core, "Builds oracle chain; evaluates")
+Rel(core, lock, "Reads entries; compares inputHash and questionHash", "System.Text.Json")
+Rel(core, oracle, "Forwards non-reusable requests", "IDecisionOracle")
+Rel(oracle, openai, "POST /v1/decisions", "HTTPS / JSON")
+@enduml

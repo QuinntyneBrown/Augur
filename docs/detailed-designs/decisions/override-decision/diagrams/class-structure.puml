@@ -1,0 +1,64 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Override a decision
+
+class SetOption {
+  +IReadOnlyList<(string Id, string Value)> Parse(tokens: string[]): IReadOnlyList<(string, string)>
+}
+
+class OverrideParser {
+  +Parse(pairs: IReadOnlyList<(string Id, string Value)>, catalog: DecisionCatalog): OverrideSet
+}
+
+class OverrideSet {
+  +IReadOnlyDictionary<string, string> Values
+  +bool Contains(id: string)
+  +string? ValueOf(id: string)
+}
+
+class UsageException {
+  +string Message
+}
+
+class DecisionCatalog {
+  +DecisionDefinition Get(id: string): DecisionDefinition
+  +IReadOnlyList<string> Ids
+}
+
+class TreeEvaluator {
+  +EvaluateAsync(input: SpecificationInput, overrides: OverrideSet, ct: CancellationToken): Task<DecisionState>
+  -SeedOverrides(overrides: OverrideSet): void
+  -ApplicabilityCheck(skipped: DecisionDefinition): void
+}
+
+class DecisionState {
+  +Store(decision: ResolvedDecision): void
+  +MarkSkipped(id: string): void
+}
+
+class ResolvedDecision {
+  +string Id
+  +string Value
+  +DecisionSource Source = Override
+}
+
+SetOption ..> OverrideParser : feeds raw pairs
+OverrideParser ..> DecisionCatalog : validates against
+OverrideParser ..> OverrideSet : produces
+OverrideParser ..> UsageException : throws
+TreeEvaluator ..> OverrideSet : seeds from
+TreeEvaluator --> DecisionState : writes
+TreeEvaluator ..> UsageException : throws on inapplicable override
+DecisionState "1" *-- "*" ResolvedDecision
+@enduml

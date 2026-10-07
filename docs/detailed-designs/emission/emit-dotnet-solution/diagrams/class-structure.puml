@@ -1,0 +1,120 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Emit a .NET solution
+
+package "Augur.Emission" {
+  interface IEmitter {
+    +Emit(context: EmissionContext): FileSet
+  }
+  class EmissionContext {
+    +GenerationPlan Plan
+    +string SolutionName
+    +string AngularProjectName
+    +string OutputRoot
+  }
+  class FileSet {
+    +Add(relativePath: string, content: string): void
+    +AddBinary(relativePath: string, bytes: byte[]): void
+    +IReadOnlyList<string> Paths
+  }
+  class TemplateEngine {
+    +Render(resourceName: string, model: object): string
+    +Static(resourceName: string): byte[]
+  }
+}
+
+package "Augur.Emission.DotNet" {
+  class DotNetSolutionEmitter {
+    +Emit(context: EmissionContext): FileSet
+    -EmitProject(model: ProjectModel, files: FileSet): void
+  }
+  class TemplateGroupSelector {
+    +Select(plan: GenerationPlan): IReadOnlyList<TemplateGroup>
+  }
+  enum TemplateGroup {
+    Common
+    CleanArchitecture
+    VerticalSlice
+    MinimalApi
+    EfCoreSqlServer
+    EfCorePostgreSql
+    EfCoreSqlite
+    PersistenceNone
+    JwtBearer
+    BackgroundWorker
+    CqrsHandlers
+  }
+  class ProjectModel {
+    +string Name
+    +string Sdk
+    +IReadOnlyList<string> ProjectReferences
+    +IReadOnlyList<PackageReference> Packages
+    +Guid ProjectId
+  }
+  class SolutionModel {
+    +string Name
+    +IReadOnlyList<ProjectModel> Projects
+  }
+  class PackageReference {
+    +string Id
+    +string ExactVersion
+  }
+  class DeterministicGuid {
+    +{static} For(solution: string, project: string): Guid
+  }
+  class PackageCatalog {
+    +{static} Resolve(id: string): PackageReference
+  }
+}
+
+package "Emitted {Name}.Api" {
+  class Program {
+    +Main(args: string[]): void
+  }
+  class AuthenticationOptions {
+    +string Authority
+    +string Audience
+  }
+  class AuthenticationStartupValidator {
+    +Validate(options: AuthenticationOptions, env: IHostEnvironment): void
+  }
+  class CorsStartup {
+    +Configure(services: IServiceCollection, allowedOrigins: string[]): void
+  }
+  class HealthEndpoint {
+    +Map(app: IEndpointRouteBuilder): void
+  }
+  class "{Name}DbContext" as DbContext {
+    +DbSet<T> ...
+  }
+}
+
+IEmitter <|.. DotNetSolutionEmitter
+DotNetSolutionEmitter ..> EmissionContext : reads
+DotNetSolutionEmitter ..> TemplateGroupSelector : selects groups
+DotNetSolutionEmitter ..> TemplateEngine : renders
+DotNetSolutionEmitter ..> FileSet : produces
+DotNetSolutionEmitter ..> SolutionModel : builds
+SolutionModel "1" *-- "1..*" ProjectModel
+ProjectModel "1" *-- "*" PackageReference
+ProjectModel ..> DeterministicGuid : ProjectId
+ProjectModel ..> PackageCatalog : exact versions
+TemplateGroupSelector ..> TemplateGroup : returns
+DotNetSolutionEmitter ..> Program : emits template for
+Program ..> AuthenticationStartupValidator : runs at start
+Program ..> AuthenticationOptions : binds
+Program ..> CorsStartup : configures
+Program ..> HealthEndpoint : maps
+Program ..> DbContext : registers (ef-core-*)
+@enduml

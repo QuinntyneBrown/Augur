@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Write the generation plan
+
+Person(dev, "Developer", "Supplies --name and reads the plan")
+System(augur, "Augur CLI", "Builds and writes the GenerationPlan")
+System_Ext(openai, "OpenAI Decisions API", "Source of recorded decisions")
+
+Rel(dev, augur, "Runs augur plan --name ... [--out ...]", "terminal")
+Rel(augur, openai, "Asks catalog questions", "HTTPS / JSON")
+Rel(augur, dev, "Plan JSON on stdout or at --out", "canonical JSON")
+@enduml

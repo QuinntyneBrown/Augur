@@ -1,0 +1,84 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Record decisions in the lockfile
+
+class Lockfile {
+  +int LockfileVersion = 1
+  +int CatalogVersion
+  +string InputHash
+  +IReadOnlyList<LockfileEntry> Entries
+  +LockfileEntry? Find(id: string)
+}
+
+class LockfileEntry {
+  +string Id
+  +string QuestionHash
+  +DecisionSource Source
+  +string Value
+  +DecisionAnswer Raw
+  +string? Model
+  +DateTimeOffset ResolvedAt
+}
+
+enum DecisionSource {
+  Api
+  Fallback
+  User
+  Script
+  Override
+  Lockfile
+}
+
+class LockfileBuilder {
+  +Build(state: DecisionState, inputHash: string, catalogVersion: int, previous: Lockfile?): Lockfile
+}
+
+class InputHasher {
+  +Hash(input: SpecificationInput): string
+}
+
+class QuestionHasher {
+  +Hash(definition: DecisionDefinition): string
+}
+
+class LockfileSerializer {
+  +Serialize(lockfile: Lockfile): string
+  +Deserialize(json: string): Lockfile
+}
+
+class LockfileStore {
+  +string Path
+  -bool readFailed
+  +Read(): Lockfile?
+  +Write(lockfile: Lockfile): void
+}
+
+class UsageException {
+  +string Message
+}
+
+class DecisionState {
+  +IEnumerable<ResolvedDecision> Resolved()
+}
+
+Lockfile "1" *-- "*" LockfileEntry : entries sorted by Id
+LockfileEntry --> DecisionSource : api | fallback | user | script
+LockfileBuilder ..> DecisionState : reads
+LockfileBuilder ..> InputHasher : inputHash
+LockfileBuilder ..> QuestionHasher : questionHash per entry
+LockfileBuilder ..> Lockfile : produces
+LockfileStore ..> LockfileSerializer : canonical form
+LockfileStore ..> Lockfile : reads / writes
+LockfileStore ..> UsageException : throws on parse or version error
+@enduml

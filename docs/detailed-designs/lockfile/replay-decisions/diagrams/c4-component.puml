@@ -1,0 +1,30 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Replay decisions from the lockfile
+
+Container_Boundary(cli, "Augur.Cli") {
+  Component(conflict, "OptionConflictCheck", "Parse-time check", "--offline with --refresh -> exit 2 (L2-037)")
+  Component(plancmd, "PlanCommand", "Command handler", "Builds ReplayingOracle(inner)")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(evaluator, "TreeEvaluator", "Orchestrator", "Sees one IDecisionOracle")
+  Component(replay, "ReplayingOracle", "IDecisionOracle decorator", "Reuse when hashes match; forward the rest (L2-023)")
+  Component(refresh, "RefreshSet", "Option model", "All ids or named ids to bypass (L2-024)")
+  Component(offline, "OfflineOracle", "IDecisionOracle", "Throws UnresolvedDecisionsException -> exit 3 (L2-037)")
+  Component(lockfile, "Lockfile", "Model", "Previous entries with inputHash and questionHash")
+  Component(hashers, "InputHasher / QuestionHasher", "Hash", "Current input and question hashes")
+}
+Container(api, "Augur.Oracle.OpenAI", ".NET library", "DecisionsApiOracle (online inner oracle)")
+Container(script, "Augur.Oracle.Scripted", ".NET library", "ScriptedOracle (scripted inner oracle)")
+
+Rel(conflict, plancmd, "validated options")
+Rel(plancmd, replay, "Construct(previous, inputHash, refreshSet, inner)")
+Rel(evaluator, replay, "AnswerAsync(input, requests)")
+Rel(replay, lockfile, "Find(id)")
+Rel(replay, hashers, "Compare hashes")
+Rel(replay, refresh, "Matches(id)")
+Rel(replay, api, "Forward (online)")
+Rel(replay, script, "Forward (scripted)")
+Rel(replay, offline, "Forward (--offline)")
+@enduml

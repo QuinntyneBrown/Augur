@@ -1,0 +1,69 @@
+@startuml
+title UML sequence behaviour — Generate end to end
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "GenerateCommand" as cmd
+  participant "RunClock" as clock
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "TreeEvaluator" as eval
+  participant "LockfileStore" as lock
+  participant "PlanBuilder" as builder
+  participant "PlanValidator" as val
+end box
+box "Backend — Augur Infrastructure (Emission / file system)" #FFF4E5
+  participant "OutputDirectoryPolicy" as policy
+  participant "EmissionPipeline" as pipe
+  database "Output directory" as out
+end box
+
+dev -> cmd : augur generate --spec spec.md --name Contoso.Orders --out out [plan and emit options] (L2-036)
+cmd -> clock : Start
+cmd -> policy : Pre-check("out", force) (L2-033)
+alt non-empty and no --force
+  policy --> cmd : OutputConflictException
+  cmd --> dev : error: directory is not empty (exit 5); no API request made
+else ok
+  policy --> cmd : ok
+  cmd -> eval : EvaluateAsync(input, overrides)
+  alt unresolved decisions
+    eval --> cmd : UnresolvedDecisionsException
+    cmd --> dev : exit 3; nothing written to out
+  else all Resolved or Skipped
+    eval --> cmd : DecisionState
+    opt not --dry-run
+      cmd -> lock : Write(state, inputHash) (L2-036)
+      lock --> cmd : decisions.json written
+    end
+    cmd -> builder : Build(state, name, inputHash, catalogVersion)
+    builder --> cmd : GenerationPlan
+    cmd -> val : Validate(plan)
+    val --> cmd : valid
+    cmd -> pipe : Emit(plan + PlanFileEntry "augur.plan.json", "out", force, dryRun) (L2-036)
+    alt --dry-run
+      pipe --> dev : sorted file list incl. augur.plan.json (L2-035)
+    else real run
+      pipe -> out : stage and move solution + augur.plan.json
+      out --> pipe : written
+    end
+    pipe --> cmd : EmissionResult
+    cmd -> clock : Elapsed (L2-048)
+    clock --> cmd : duration
+    cmd --> dev : RunSummary on stderr (sources, requests, files, elapsed); exit 0
+  end
+end
+@enduml

@@ -1,0 +1,125 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Emit an Angular workspace
+
+package "Augur.Core" {
+  class AngularProjectName {
+    +{static} From(solutionName: SolutionName): string
+  }
+}
+
+package "Augur.Emission" {
+  interface IEmitter {
+    +Emit(context: EmissionContext): FileSet
+  }
+  class EmissionContext {
+    +GenerationPlan Plan
+    +string SolutionName
+    +string AngularProjectName
+  }
+  class FileSet
+  class TemplateEngine {
+    +Render(resourceName: string, model: object): string
+    +Static(resourceName: string): byte[]
+  }
+}
+
+package "Augur.Emission.Angular" {
+  class AngularWorkspaceEmitter {
+    +Emit(context: EmissionContext): FileSet
+    -WorkspaceRoot(plan: GenerationPlan): string
+  }
+  class AngularTemplateGroupSelector {
+    +Select(plan: GenerationPlan): IReadOnlyList<AngularTemplateGroup>
+  }
+  enum AngularTemplateGroup {
+    Common
+    ShellMaterial
+    ShellPlain
+    StateSignals
+    StateNgrxSignalStore
+    SsrEnabled
+    AuthOidcPkce
+  }
+  class WorkspaceModel {
+    +string ProjectName
+    +string WorkspaceRoot
+    +string ApiBaseUrl
+    +IReadOnlyList<NpmDependency> Dependencies
+    +BudgetModel Budgets
+  }
+  class NpmDependency {
+    +string Name
+    +string ExactVersion
+    +bool Dev
+  }
+  class BudgetModel {
+    +string InitialWarning = "500kB"
+    +string InitialError = "1MB"
+    +string StyleWarning = "4kB"
+    +string StyleError = "8kB"
+  }
+  class NpmPackageCatalog {
+    +{static} Resolve(name: string): NpmDependency
+  }
+}
+
+package "Emitted {name} application" {
+  class AppShellComponent {
+    +Signal<boolean> isCompact
+    +Signal<boolean> navOpen
+    +toggleNav(): void
+  }
+  class BreakpointService {
+    +Signal<boolean> isCompact
+  }
+  class RouteFocusService {
+    +focusHeadingAfterNavigation(): void
+  }
+  class "routes: Routes" as Routes {
+    +'' -> HomeComponent
+    +'**' -> loadComponent(NotFoundComponent)
+  }
+  class AppStateService {
+    +Signal<...> state
+  }
+  class AuthService {
+    +Signal<boolean> isAuthenticated
+    +Signal<string | null> accessToken
+    +signIn(): Promise<void>
+    +signOut(): Promise<void>
+  }
+  class "authGuard: CanActivateFn" as AuthGuard
+  class "authInterceptor: HttpInterceptorFn" as AuthInterceptor
+}
+
+IEmitter <|.. AngularWorkspaceEmitter
+AngularWorkspaceEmitter ..> EmissionContext : reads
+AngularWorkspaceEmitter ..> AngularProjectName : derives name
+AngularWorkspaceEmitter ..> AngularTemplateGroupSelector : selects groups
+AngularWorkspaceEmitter ..> WorkspaceModel : builds
+AngularWorkspaceEmitter ..> TemplateEngine : renders
+AngularWorkspaceEmitter ..> FileSet : produces
+AngularTemplateGroupSelector ..> AngularTemplateGroup : returns
+WorkspaceModel "1" *-- "*" NpmDependency
+WorkspaceModel "1" *-- "1" BudgetModel
+NpmDependency ..> NpmPackageCatalog : resolved from
+AngularWorkspaceEmitter ..> AppShellComponent : emits template for
+AppShellComponent --> BreakpointService : reads isCompact
+AppShellComponent --> RouteFocusService : focus on navigation
+AppShellComponent ..> Routes : hosts router outlet
+AuthGuard ..> AuthService : signIn() when unauthenticated
+AuthInterceptor ..> AuthService : accessToken; signIn() on 401
+AppShellComponent ..> AppStateService : reads state
+@enduml

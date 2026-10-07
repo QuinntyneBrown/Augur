@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Generate end to end
+
+Person(dev, "Developer", "Runs augur generate once")
+System(augur, "Augur CLI", "Decides, records, and emits in one run")
+System_Ext(openai, "OpenAI Decisions API", "Answers decisions not already recorded")
+
+Rel(dev, augur, "augur generate --spec --name --out ...", "terminal")
+Rel(augur, openai, "One batched request per dependency level", "HTTPS / JSON")
+Rel(augur, dev, "Solution, augur.plan.json, decisions.json")
+@enduml

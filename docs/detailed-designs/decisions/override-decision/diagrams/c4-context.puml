@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Override a decision
+
+Person(dev, "Developer", "Fixes decisions with --set id=value")
+System(augur, "Augur CLI", "Applies overrides before asking any question")
+System_Ext(openai, "OpenAI Decisions API", "Asked only for decisions left open")
+
+Rel(dev, augur, "Runs augur plan --set ...", "terminal")
+Rel(augur, openai, "Sends only non-overridden decisions", "HTTPS / JSON")
+@enduml

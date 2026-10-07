@@ -1,0 +1,57 @@
+@startuml
+title UML sequence behaviour — Evaluate the decision tree
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "PlanCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "TreeEvaluator" as eval
+  participant "DependencyLeveller" as lev
+  participant "DecisionState" as state
+  participant "DecisionResolver" as res
+end box
+box "Backend — Augur Infrastructure (Oracle)" #FFF4E5
+  participant "IDecisionOracle" as oracle
+end box
+participant "OpenAI Decisions API" as openai
+
+dev -> cmd : augur plan --spec spec.md --name Contoso.Orders
+cmd -> eval : EvaluateAsync(input, overrides)
+eval -> state : Store overrides as Resolved(Override)
+eval -> lev : Levels(catalog)
+lev --> eval : ordered levels
+loop for each level
+  eval -> state : Evaluate when clauses; MarkSkipped for false (L2-010)
+  eval -> state : Pending(level)
+  state --> eval : pending definitions
+  alt pending definitions exist
+    eval -> oracle : AnswerAsync(input, one request per pending decision) (L2-047)
+    oracle -> openai : POST /v1/decisions (single batched request)
+    openai --> oracle : answers
+    oracle --> eval : DecisionAnswer per request
+    loop for each answer
+      eval -> res : Resolve(definition, answer)
+      res --> eval : Resolved value or LowConfidence
+      eval -> state : Store(ResolvedDecision)
+    end
+  else nothing pending in this level
+    eval -> eval : No request for this level (L2-047)
+  end
+end
+eval --> cmd : DecisionState (all Resolved or Skipped)
+cmd --> dev : Plan written; summary on stderr
+@enduml

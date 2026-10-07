@@ -1,0 +1,11 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Emit output safely
+
+Person(dev, "Developer", "Runs augur emit against a plan")
+System(augur, "Augur CLI", "Renders templates and writes files atomically; no external tools, no network")
+
+Rel(dev, augur, "augur emit --plan plan.json --out out [--force] [--dry-run]", "terminal")
+Rel(augur, dev, "Emitted solution in the output directory, or a dry-run listing")
+@enduml

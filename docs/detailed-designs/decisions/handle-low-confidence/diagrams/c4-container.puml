@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Handle a low-confidence decision
+
+Person(dev, "Developer", "Runs augur plan")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "PolicySelector, InteractivePromptHandler, stderr/stdin")
+  Container(core, "Augur.Core", ".NET library", "ILowConfidenceHandler, DefaultFallbackHandler, FailHandler")
+  Container(oracle, "Augur.Oracle.OpenAI", ".NET library", "Supplies raw answers")
+}
+System_Ext(openai, "OpenAI Decisions API", "Raw answers")
+
+Rel(dev, cli, "--on-low-confidence; prompt input", "terminal")
+Rel(cli, core, "Registers chosen handler; runs evaluation")
+Rel(core, cli, "Prompt text and warnings", "stderr")
+Rel(oracle, core, "DecisionAnswer")
+Rel(oracle, openai, "POST /v1/decisions", "HTTPS / JSON")
+@enduml

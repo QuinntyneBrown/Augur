@@ -1,0 +1,57 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Install the tool
+
+class "Augur.Cli.csproj" as csproj <<MSBuild>> {
+  +PackAsTool = true
+  +ToolCommandName = "augur"
+  +PackageId = "Augur.Cli"
+  +TargetFramework = "net10.0"
+  +InvariantGlobalization = true
+}
+
+class "Directory.Build.props" as props <<MSBuild>> {
+  +Version
+  +Nullable = enable
+  +TreatWarningsAsErrors = true
+  +Deterministic = true
+}
+
+class PathResolver {
+  +Resolve(userPath: string): ResolvedPath
+}
+
+class ResolvedPath {
+  +string Original
+  +string FullPath
+}
+
+class PlatformMatrix <<CI>> {
+  +IReadOnlyList<string> RuntimeIdentifiers
+}
+
+class InstallSmokeTest <<AcceptanceTest>> {
+  +Pack_Install_Version_Uninstall(): Task
+}
+
+class NonAsciiPathTest <<AcceptanceTest>> {
+  +Plan_Emit_Explain_With_NonAscii_Paths(): Task
+}
+
+props ..> csproj : imported by
+PathResolver ..> ResolvedPath : returns
+PlatformMatrix ..> InstallSmokeTest : runs per RID
+PlatformMatrix ..> NonAsciiPathTest : runs per RID
+NonAsciiPathTest ..> PathResolver : exercises
+@enduml

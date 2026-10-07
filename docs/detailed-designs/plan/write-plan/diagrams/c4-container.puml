@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Write the generation plan
+
+Person(dev, "Developer", "Runs augur plan")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "NameOption, --out, PlanCommand")
+  Container(core, "Augur.Core", ".NET library", "SolutionName, PlanBuilder, PlanWriter, CanonicalJson")
+  ContainerDb(plan, "plan JSON", "JSON file or stdout", "GenerationPlan in canonical form")
+  ContainerDb(lock, "decisions.json", "JSON file", "Recorded answers")
+}
+
+Rel(dev, cli, "--name Contoso.Orders --out plan.json", "terminal")
+Rel(cli, core, "Validate name; build and write plan")
+Rel(core, plan, "Writes canonical JSON", "temp file + rename")
+Rel(core, lock, "Writes entries before the plan")
+@enduml

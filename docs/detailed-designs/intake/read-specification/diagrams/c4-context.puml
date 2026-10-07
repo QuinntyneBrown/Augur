@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Read a specification
+
+Person(dev, "Developer", "Writes a specification and optional sketches")
+System(augur, "Augur CLI", "Validates and hashes the specification before any request")
+System_Ext(openai, "OpenAI Decisions API", "Receives text and inline base64 images")
+
+Rel(dev, augur, "--spec <path|-> and up to 4 --image <path>", "terminal / stdin")
+Rel(augur, openai, "One user message: input_text then input_image data: URLs", "HTTPS / JSON")
+@enduml

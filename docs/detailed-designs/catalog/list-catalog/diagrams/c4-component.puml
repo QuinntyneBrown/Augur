@@ -1,0 +1,24 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — List the catalog
+
+Person(dev, "Developer", "Runs augur catalog")
+Container_Boundary(cli, "Augur.Cli") {
+  Component(cmd, "CatalogCommand", "System.CommandLine command", "Option --json; selects writer")
+  Component(stdout, "StdoutWriter", "stdout writer", "Single stdout write")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(catalog, "DecisionCatalog", "Immutable model", "BuiltIn; CatalogVersion; Decisions")
+  Component(view, "CatalogEntryView", "Read model", "id, type, answers, default, when")
+  Component(text, "CatalogListing", "Text writer", "Fixed-width blocks per decision (L2-008)")
+  Component(json, "CatalogJsonWriter", "JSON writer", "catalogVersion + decisions[] (L2-008)")
+}
+
+Rel(dev, cmd, "augur catalog [--json]", "terminal")
+Rel(cmd, catalog, "BuiltIn")
+Rel(cmd, view, "From(definition) per decision")
+Rel(cmd, text, "Render(views) when --json absent")
+Rel(cmd, json, "Render(catalogVersion, views) when --json")
+Rel(cmd, stdout, "Write(result)")
+@enduml

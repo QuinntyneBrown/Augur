@@ -1,0 +1,49 @@
+@startuml
+title UML sequence behaviour — Load and validate the catalog
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "Program" as prog
+  participant "ErrorReporter" as err
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "DecisionCatalog" as catalog
+  participant "CatalogVersion2" as builder
+  participant "CatalogValidator" as validator
+  participant "QuestionHasher" as hasher
+end box
+
+dev -> prog : augur <command>
+prog -> catalog : Load()
+catalog -> builder : Build()
+builder --> catalog : nine DecisionDefinitions (L2-007)
+loop for each definition
+  catalog -> hasher : Hash(definition)
+  hasher -> hasher : canonical JSON of type, instructions, options/levels + descriptions, thresholds
+  hasher --> catalog : SHA-256 hex QuestionHash (L2-009)
+end
+catalog -> validator : Validate(decisions)
+alt duplicate id, default not in answer set, empty description, choice without "other", undefined when target, or cycle
+  validator --> catalog : throw InvalidCatalogException(decisionId, reason) (L2-007)
+  catalog --> prog : exception
+  prog -> err : report
+  err --> dev : error: invalid catalog: <decisionId> ... (exit 1)
+else catalog valid
+  validator --> catalog : ok
+  catalog --> prog : DecisionCatalog.BuiltIn (CatalogVersion = 2)
+  prog -> prog : dispatch command
+end
+@enduml

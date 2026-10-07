@@ -1,0 +1,15 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Install the tool
+
+Person(dev, "Developer", "Installs and runs augur on Windows, Linux, or macOS")
+System(augur, "Augur CLI", "NuGet package Augur.Cli; command augur; .NET 10")
+System_Ext(sdk, ".NET SDK", "dotnet tool install / uninstall")
+System_Ext(feed, "NuGet feed", "Hosts the Augur.Cli package")
+
+Rel(dev, sdk, "dotnet tool install --global Augur.Cli", "shell")
+Rel(sdk, feed, "Downloads Augur.Cli", "HTTPS")
+Rel(sdk, augur, "Places augur on PATH")
+Rel(dev, augur, "augur --version", "terminal")
+@enduml

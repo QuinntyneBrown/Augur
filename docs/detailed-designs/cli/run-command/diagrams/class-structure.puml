@@ -1,0 +1,124 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Run a command
+
+class Program {
+  +{static} Main(args: string[]): Task<int>
+}
+
+class RootCommand {
+  +Option<Verbosity> VerbosityOption
+  +Option<bool> VersionOption
+  +RootCommand(commands: IReadOnlyList<Command>)
+}
+
+abstract class Command <<System.CommandLine>>
+
+class PlanCommand
+class EmitCommand
+class GenerateCommand
+class ExplainCommand
+class CatalogCommand
+class SchemaCommand {
+  +Command PlanSubcommand
+}
+
+enum ExitCode {
+  Success = 0
+  InternalError = 1
+  InvalidUsage = 2
+  Unresolved = 3
+  ApiFailure = 4
+  OutputConflict = 5
+  Cancelled = 130
+}
+
+enum Verbosity {
+  Quiet
+  Normal
+  Detailed
+  Diagnostic
+}
+
+abstract class AugurException {
+  +ExitCode ExitCode
+  +string Message
+}
+class UsageException
+class UnresolvedDecisionsException
+class DecisionsApiException
+class OutputConflictException
+
+class ErrorReporter {
+  +Run(action: Func<CancellationToken, Task>, ct: CancellationToken): Task<ExitCode>
+}
+
+class ConsoleReporter {
+  +Verbosity Level
+  +Error(message: string): void
+  +Warn(message: string): void
+  +Info(message: string): void
+  +Detail(message: string): void
+  +Diagnostic(message: string): void
+}
+
+class StdoutWriter {
+  +Write(text: string): void
+  +WriteJson<T>(value: T): void
+}
+
+class RunSummary {
+  +IDictionary<DecisionSource, int> BySource
+  +int Skipped
+  +int ApiRequests
+  +TimeSpan Elapsed
+  +Render(): string
+}
+
+class VersionInfo {
+  +string ToolVersion
+  +int CatalogVersion
+  +Render(): string
+}
+
+class CancellationSource {
+  +CancellationToken Token
+  +Register(): IDisposable
+}
+
+Command <|-- RootCommand
+Command <|-- PlanCommand
+Command <|-- EmitCommand
+Command <|-- GenerateCommand
+Command <|-- ExplainCommand
+Command <|-- CatalogCommand
+Command <|-- SchemaCommand
+RootCommand "1" *-- "6" Command : subcommands
+AugurException <|-- UsageException
+AugurException <|-- UnresolvedDecisionsException
+AugurException <|-- DecisionsApiException
+AugurException <|-- OutputConflictException
+AugurException --> ExitCode
+Program ..> RootCommand : builds
+Program ..> ErrorReporter : wraps invocation
+Program ..> CancellationSource : registers
+ErrorReporter ..> AugurException : maps
+ErrorReporter --> ConsoleReporter : error: line
+ConsoleReporter --> Verbosity
+RunSummary ..> ConsoleReporter : Info(Render())
+Command ..> StdoutWriter : machine-readable output
+Command ..> ConsoleReporter : progress
+Command ..> RunSummary : records
+RootCommand ..> VersionInfo : --version
+@enduml

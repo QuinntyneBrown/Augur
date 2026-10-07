@@ -1,0 +1,55 @@
+@startuml
+title UML sequence behaviour — Record decisions in the lockfile
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "PlanCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "LockfileStore" as store
+  participant "TreeEvaluator" as eval
+  participant "LockfileBuilder" as builder
+end box
+box "Backend — Augur Infrastructure (Oracle / file system)" #FFF4E5
+  database "decisions.json" as file
+  database "decisions.json.<random>.tmp" as tmp
+end box
+
+dev -> cmd : augur plan --spec spec.md [--lock path]
+cmd -> store : Read()
+store -> file : read if exists
+alt file absent
+  store --> cmd : null
+else invalid JSON or lockfileVersion != 1 (L2-025)
+  store -> store : readFailed = true
+  store --> cmd : UsageException(path, position)
+  cmd --> dev : error: ... (exit 2); file untouched
+else parsed
+  store --> cmd : Lockfile (previous)
+end
+cmd -> eval : EvaluateAsync(input, overrides)
+eval --> cmd : DecisionState (all Resolved or Skipped)
+cmd -> builder : Build(state, inputHash, catalogVersion, previous)
+builder -> builder : keep Resolved with source api | fallback | user | script\ndrop Override and Skipped (L2-022)\nkeep ResolvedAt of reused entries
+builder --> cmd : Lockfile
+cmd -> store : Write(lockfile)
+store -> store : LockfileSerializer: sort by id, 2-space indent, LF, trailing newline (L2-025)
+store -> tmp : write bytes, flush to disk
+store -> tmp : File.Move(tmp, decisions.json, overwrite: true) (L2-025)
+tmp --> file : renamed
+store --> cmd : done
+cmd --> dev : plan on stdout; summary on stderr
+@enduml

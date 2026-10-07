@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Define the catalog
+
+Person(dev, "Developer", "Runs augur")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "Reads CatalogVersion; reports InvalidCatalogException as exit 1")
+  Container(core, "Augur.Core", ".NET library", "DecisionCatalog.BuiltIn; CatalogValidator; QuestionHasher")
+  Container(oracle, "Augur.Oracle.OpenAI", ".NET library", "Builds questions from definitions")
+  ContainerDb(lock, "decisions.json", "JSON file", "Stores catalogVersion and per-entry questionHash")
+  ContainerDb(plan, "plan JSON", "JSON file", "Stores catalogVersion")
+}
+System_Ext(openai, "OpenAI Decisions API", "Answers questions")
+
+Rel(dev, cli, "augur <command>", "terminal")
+Rel(cli, core, "Load() at startup")
+Rel(core, oracle, "DecisionDefinition per request")
+Rel(oracle, openai, "POST /v1/decisions", "HTTPS / JSON")
+Rel(core, lock, "catalogVersion; questionHash per entry")
+Rel(core, plan, "catalogVersion")
+@enduml

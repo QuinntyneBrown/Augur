@@ -1,0 +1,17 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Validate the generation plan
+
+Person(dev, "Developer", "Runs augur emit / augur schema plan")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "EmitCommand, SchemaCommand; exit code 2 on violations")
+  Container(core, "Augur.Core", ".NET library", "PlanReader, PlanValidator, PlanSchemaGenerator, DecisionCatalog")
+  ContainerDb(plan, "plan JSON", "JSON file", "GenerationPlan to validate")
+}
+
+Rel(dev, cli, "--plan plan.json", "terminal")
+Rel(cli, core, "Read, validate, or generate schema")
+Rel(core, plan, "Reads (<= 1 MiB, strict JSON)")
+Rel(cli, dev, "Violations (stderr) or schema (stdout)")
+@enduml

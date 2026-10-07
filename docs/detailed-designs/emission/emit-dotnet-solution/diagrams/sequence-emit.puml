@@ -1,0 +1,59 @@
+@startuml
+title UML sequence behaviour — Emit a .NET solution
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "EmitCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "PlanValidator" as validator
+end box
+box "Backend — Augur Infrastructure (Emission)" #FFF4E5
+  participant "EmissionPipeline" as pipeline
+  participant "DotNetSolutionEmitter" as emitter
+  participant "TemplateGroupSelector" as selector
+  participant "TemplateEngine" as engine
+  participant "FileSet" as files
+end box
+
+dev -> cmd : augur emit --plan plan.json --out ./out
+cmd -> validator : Validate(plan)
+validator --> cmd : valid GenerationPlan
+cmd -> pipeline : Run(EmissionContext)
+pipeline -> emitter : Emit(context)
+emitter -> selector : Select(plan) (L2-030)
+selector --> emitter : [Common, CleanArchitecture, EfCorePostgreSql, JwtBearer, CqrsHandlers]
+emitter -> emitter : Build SolutionModel; ProjectId = DeterministicGuid.For(name, project)
+loop for each project in SolutionModel
+  emitter -> engine : Render("{group}/{Project}.csproj", ProjectModel)
+  engine --> emitter : csproj text with exact PackageReference versions (L2-046)
+  emitter -> files : Add(path, text)
+  loop for each source template in group
+    emitter -> engine : Render(template, model)
+    engine --> emitter : text
+    emitter -> files : Add(path, text)
+  end
+end
+emitter -> engine : Render("Common/Solution.slnx", SolutionModel)
+engine --> emitter : {Name}.slnx
+emitter -> files : Add("{Name}.slnx", text)
+emitter -> engine : Static("Common/.editorconfig"), Static("Common/.gitignore"), Render("Common/Directory.Build.props")
+engine --> emitter : bytes / text
+emitter -> files : Add(...)
+emitter --> pipeline : FileSet (no child process started)
+pipeline --> cmd : files written to ./out
+cmd --> dev : exit 0; summary on stderr
+@enduml

@@ -1,0 +1,63 @@
+@startuml
+title UML sequence behaviour — Read and validate the specification
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "PlanCommand" as cmd
+  participant "ErrorReporter" as err
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "SpecificationReader" as reader
+  participant "ImageFile" as image
+  participant "ImageSignature" as sig
+  participant "InputHasher" as hasher
+end box
+box "Backend — Augur Infrastructure (file system)" #FFF4E5
+  database "Local files / stdin" as fs
+end box
+
+dev -> cmd : augur plan --spec spec.md --image a.png --image b.jpg
+alt --spec missing or 5+ --image at parse time
+  cmd --> err : UsageException
+  err --> dev : error: ... (exit 2) (L2-005, L2-006)
+else parsed
+  cmd -> reader : Read("spec.md" | "-")
+  reader -> fs : read bytes (file or stdin)
+  fs --> reader : bytes
+  alt missing, > 256 KiB, invalid UTF-8, or whitespace only
+    reader --> err : UsageException (L2-005)
+    err --> dev : error: ... (exit 2); no API request
+  else text valid
+    reader --> cmd : text (BOM dropped)
+    loop for each --image in command-line order
+      cmd -> image : Load(path)
+      image -> fs : read bytes
+      fs --> image : bytes
+      image -> sig : Detect(leading bytes)
+      sig --> image : image/png | image/jpeg | image/webp | null
+      alt > 10 MiB or signature unknown
+        image --> err : UsageException (L2-006)
+        err --> dev : error: ... (exit 2); no API request
+      else accepted
+        image --> cmd : ImageFile(path, bytes, mediaType)
+      end
+    end
+    cmd -> hasher : Hash(text, images)
+    hasher --> cmd : SHA-256 over LF text + image bytes in order
+    cmd -> cmd : SpecificationInput(text, images, inputHash)
+  end
+end
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Validate the generation plan
+
+Container_Boundary(cli, "Augur.Cli") {
+  Component(emitcmd, "EmitCommand", "Command handler", "Reads and validates before emission")
+  Component(schemacmd, "SchemaCommand", "Command handler", "augur schema plan")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(reader, "PlanReader", "Parser", "1 MiB limit; strict System.Text.Json")
+  Component(validator, "PlanValidator", "Rules", "Catalog rules; collects all violations (L2-028)")
+  Component(result, "PlanValidationResult", "Result", "PlanViolation list with JSON paths")
+  Component(schema, "PlanSchemaGenerator", "Generator", "JSON Schema draft 2020-12 (L2-029)")
+  Component(catalog, "DecisionCatalog", "Model", "Answer sets, when clauses, version")
+  Component(name, "SolutionName", "Value object", "Pattern and keyword rules")
+}
+ContainerDb(planFile, "plan JSON", "JSON file", "Input")
+
+Rel(emitcmd, reader, "Read(path)")
+Rel(reader, planFile, "Reads")
+Rel(emitcmd, validator, "Validate(plan)")
+Rel(validator, catalog, "Reads definitions")
+Rel(validator, name, "Parse(solutionName)")
+Rel(validator, result, "Returns")
+Rel(schemacmd, schema, "Generate()")
+Rel(schema, catalog, "Reads answer sets")
+Rel(schema, name, "Reads pattern")
+@enduml

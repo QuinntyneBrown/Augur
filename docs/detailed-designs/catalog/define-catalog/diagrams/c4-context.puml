@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Define the catalog
+
+Person(dev, "Developer", "Sees the catalog through augur catalog and augur --version")
+System(augur, "Augur CLI", "Ships a versioned, validated decision catalog")
+System_Ext(openai, "OpenAI Decisions API", "Receives questions built from catalog definitions")
+
+Rel(dev, augur, "augur catalog; augur --version", "terminal")
+Rel(augur, openai, "Questions: instructions, options or levels with descriptions", "HTTPS / JSON")
+@enduml

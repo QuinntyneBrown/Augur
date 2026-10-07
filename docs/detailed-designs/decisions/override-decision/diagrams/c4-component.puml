@@ -1,0 +1,25 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Override a decision
+
+Container_Boundary(cli, "Augur.Cli") {
+  Component(setopt, "SetOption", "System.CommandLine option", "Splits --set tokens into (id, value)")
+  Component(plancmd, "PlanCommand", "Command handler", "Maps UsageException to exit 2")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(parser, "OverrideParser", "Validator", "Checks id, value, 'other', duplicates")
+  Component(set, "OverrideSet", "Immutable map", "id -> value")
+  Component(catalog, "DecisionCatalog", "Model", "Answer sets per decision")
+  Component(evaluator, "TreeEvaluator", "Orchestrator", "Seeds state; runs ApplicabilityCheck")
+  Component(state, "DecisionState", "Per-run state", "Resolved(Override) entries")
+}
+
+Rel(setopt, plancmd, "Raw pairs")
+Rel(plancmd, parser, "Parse(pairs, catalog)")
+Rel(parser, catalog, "Looks up definitions")
+Rel(parser, set, "Produces")
+Rel(plancmd, evaluator, "EvaluateAsync(input, overrideSet)")
+Rel(evaluator, state, "Store(Resolved, Source = Override)")
+Rel(evaluator, set, "Reads for ApplicabilityCheck")
+@enduml

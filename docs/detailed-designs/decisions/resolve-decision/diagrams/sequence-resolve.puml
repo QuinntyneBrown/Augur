@@ -1,0 +1,56 @@
+@startuml
+title UML sequence behaviour — Resolve a decision
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "PlanCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "TreeEvaluator" as eval
+  participant "DecisionResolver" as res
+  participant "AnswerValidator" as val
+  participant "ResolverOptions" as opts
+end box
+box "Backend — Augur Infrastructure (Oracle)" #FFF4E5
+  participant "IDecisionOracle" as oracle
+end box
+
+oracle --> eval : DecisionAnswer for decision id
+eval -> res : Resolve(definition, answer)
+res -> val : Validate(definition, answer) (L2-015)
+alt answer outside closed set or range
+  val --> res : throw InvalidAnswerException(id, value, source)
+  res --> eval : exception propagates
+  eval --> cmd : exception
+  cmd -> cmd : exit 4 (Api) or exit 2 (Script); error: on stderr
+else answer valid
+  val --> res : ok
+  res -> opts : MinConfidenceOverride
+  opts --> res : value or null
+  alt PredicateDefinition (L2-011)
+    res -> res : p >= Upper -> Resolved("true")\np <= Lower -> Resolved("false")\notherwise LowConfidence
+  else ChoiceDefinition (L2-012)
+    res -> res : confidence >= Min and choice != "other" -> Resolved(choice)\notherwise LowConfidence
+  else ScoreDefinition (L2-013)
+    res -> res : confidence < Min -> LowConfidence\nscore >= CutOff -> Resolved("true") else Resolved("false")
+  end
+  res --> eval : Resolution
+  alt Resolved
+    eval -> eval : Store ResolvedDecision(value, source, raw)
+  else LowConfidence
+    eval -> eval : Hand to low-confidence policy (L2-019)
+  end
+end
+@enduml

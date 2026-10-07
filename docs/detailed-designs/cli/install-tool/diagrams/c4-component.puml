@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Install the tool
+
+Container_Boundary(build, "Augur repository build") {
+  Component(csproj, "Augur.Cli.csproj", "MSBuild project", "PackAsTool; ToolCommandName augur; PackageId Augur.Cli; net10.0")
+  Component(props, "Directory.Build.props", "MSBuild props", "Version; nullable; warnings as errors; deterministic")
+  Component(ci, "PlatformMatrix", "GitHub Actions matrix", "win-x64, win-arm64, linux-x64, linux-arm64, osx-arm64")
+  Component(smoke, "InstallSmokeTest", "Acceptance test", "pack -> install -> augur --version -> uninstall")
+  Component(paths, "NonAsciiPathTest", "Acceptance test", "Spaces and non-ASCII in every path option")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(resolver, "PathResolver", "Utility", "Host-convention full paths; single entry for user paths")
+}
+
+Rel(props, csproj, "Imported by")
+Rel(ci, csproj, "dotnet pack")
+Rel(ci, smoke, "Runs on each RID")
+Rel(ci, paths, "Runs on each RID")
+Rel(paths, resolver, "Exercises")
+@enduml

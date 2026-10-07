@@ -1,0 +1,67 @@
+@startuml
+title UML sequence behaviour — Run a command to completion
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "Program" as prog
+  participant "RootCommand" as root
+  participant "ErrorReporter" as err
+  participant "PlanCommand" as cmd
+  participant "ConsoleReporter" as reporter
+  participant "StdoutWriter" as stdout
+  participant "RunSummary" as summary
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "TreeEvaluator" as eval
+end box
+
+dev -> prog : augur plan --spec spec.md --name Contoso.Orders [--verbosity ...]
+prog -> root : Parse(argv)
+alt unknown command, unknown option, or missing required option (L2-001)
+  root --> err : parse errors
+  err -> reporter : Error("error: Unknown command 'frobnicate'")
+  err --> prog : ExitCode.InvalidUsage
+  prog --> dev : exit 2
+else --version (L2-002)
+  root -> stdout : Write("augur 1.2.3 (catalog 2)")
+  prog --> dev : exit 0
+else parsed
+  root -> err : Run(PlanCommand handler, ct)
+  err -> cmd : Invoke(options, ct)
+  cmd -> reporter : Level = --verbosity (L2-040)
+  cmd -> eval : EvaluateAsync(input, overrides, ct)
+  alt success
+    eval --> cmd : DecisionState
+    cmd -> summary : Record sources, skipped, API requests
+    cmd -> stdout : WriteJson(plan) (L2-003: stdout only)
+    cmd -> summary : Render()
+    summary -> reporter : Info(one-line summary) (L2-040)
+    err --> prog : ExitCode.Success
+    prog --> dev : exit 0
+  else AugurException (usage / unresolved / api / output)
+    eval --> cmd : throw
+    cmd --> err : exception
+    err -> reporter : Error("error: <message>") (L2-003)
+    err --> prog : exception.ExitCode (2 / 3 / 4 / 5)
+    prog --> dev : exit code
+  else any other exception
+    cmd --> err : exception
+    err -> reporter : Error("error: <message>"); stack trace only at diagnostic (L2-003)
+    err --> prog : ExitCode.InternalError
+    prog --> dev : exit 1
+  end
+end
+@enduml

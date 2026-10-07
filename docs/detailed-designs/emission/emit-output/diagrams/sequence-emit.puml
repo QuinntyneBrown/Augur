@@ -1,0 +1,69 @@
+@startuml
+title UML sequence behaviour — Emit into an output directory
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "EmitCommand" as cmd
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "PlanValidator" as val
+end box
+box "Backend — Augur Infrastructure (Emission / file system)" #FFF4E5
+  participant "EmissionPipeline" as pipe
+  participant "IEmitter" as emitter
+  participant "OutputDirectoryGuard" as guard
+  participant "OutputDirectoryPolicy" as policy
+  participant "StagingDirectory" as staging
+  database "Output directory" as out
+end box
+
+dev -> cmd : augur emit --plan plan.json --out out [--force]
+cmd -> val : Validate(plan)
+val --> cmd : valid
+cmd -> pipe : Emit(plan, "out", force, dryRun = false)
+pipe -> emitter : Emit(EmissionContext: plan, SolutionName, AngularProjectName) (L2-044)
+alt render fault
+  emitter --> pipe : exception
+  pipe --> cmd : exception; nothing staged, output unchanged (L2-034)
+  cmd --> dev : error: ... (exit 1)
+else rendered
+  emitter --> pipe : FileSet (UTF-8 no BOM, LF, deterministic GUIDs) (L2-032)
+  pipe -> guard : Check(fileSet, "out") (L2-045)
+  alt path escapes root or crosses a reparse point
+    guard --> pipe : throw ContainmentException
+    pipe --> cmd : exception
+    cmd --> dev : error: names the link (exit 5); nothing written
+  else contained
+    guard --> pipe : ok
+    pipe -> policy : Check("out", force) (L2-033)
+    alt directory non-empty and no --force
+      policy --> pipe : throw OutputConflictException
+      pipe --> cmd : exception
+      cmd --> dev : error: directory is not empty (exit 5)
+    else empty, missing, or --force
+      policy --> pipe : ok (creates directory if missing)
+      pipe -> staging : CreateBeside("out"); Write(fileSet) (L2-034)
+      staging --> pipe : staged
+      pipe -> staging : MoveInto("out", overwrite = force)
+      staging -> out : File.Move per emitted file; other files untouched (L2-033)
+      out --> staging : moved
+      pipe -> staging : Dispose() — staging directory deleted
+      pipe --> cmd : EmissionResult
+      cmd --> dev : summary on stderr (exit 0)
+    end
+  end
+end
+@enduml

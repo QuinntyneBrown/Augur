@@ -1,0 +1,67 @@
+@startuml
+title UML sequence behaviour — Handle a low-confidence decision
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam rectangle {
+  BorderColor #344054
+  FontColor #101828
+}
+skinparam package {
+  BorderColor #667085
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+actor "Developer" as dev
+box "Frontend — augur CLI (Augur.Cli)" #E0F2FE
+  participant "PlanCommand" as cmd
+  participant "PolicySelector" as sel
+  participant "InteractivePromptHandler" as prompt
+end box
+box "Backend — Augur Core (Augur.Core)" #ECFDF3
+  participant "TreeEvaluator" as eval
+  participant "DefaultFallbackHandler" as fallback
+  participant "FailHandler" as fail
+  participant "DecisionState" as state
+end box
+
+dev -> cmd : augur plan [--on-low-confidence ...] [--min-confidence ...]
+cmd -> sel : Select(option, stdinIsTerminal, stderrIsTerminal) (L2-019)
+sel --> cmd : policy
+cmd -> eval : EvaluateAsync(..., handler for policy, ResolverOptions) (L2-021)
+eval -> eval : Resolve level; collect LowConfidence list
+alt policy = default
+  eval -> fallback : Handle(pending, state)
+  fallback -> state : Store(Default, Source = Fallback) per decision
+  fallback --> cmd : warning per decision (stderr)
+else policy = fail
+  eval -> fail : Handle(pending, state)
+  fail --> cmd : one line per decision: id, answer, confidence (stderr)
+  fail --> eval : throw UnresolvedDecisionsException
+  eval --> cmd : exception
+  cmd --> dev : exit 3; no plan written
+else policy = prompt
+  eval -> prompt : Handle(pending, state)
+  loop for each low-confidence decision
+    prompt --> dev : id, instructions, ranked answers 1..n with p (two decimals) (L2-020)
+    loop up to 3 attempts
+      dev -> prompt : number | value | empty line
+      alt valid number or value
+        prompt -> state : Store(value, Source = User)
+      else empty line
+        prompt -> state : Store(Default, Source = User)
+      else invalid entry
+        prompt --> dev : error; re-prompt
+      end
+    end
+    opt third invalid entry
+      prompt --> eval : throw UnresolvedDecisionsException
+      eval --> cmd : exception
+      cmd --> dev : exit 3
+    end
+  end
+end
+eval --> cmd : DecisionState
+@enduml

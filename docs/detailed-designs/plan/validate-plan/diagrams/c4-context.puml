@@ -1,0 +1,13 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Validate the generation plan
+
+Person(dev, "Developer", "Provides a plan file; may edit it by hand")
+System(augur, "Augur CLI", "Validates plans; prints the plan schema")
+System_Ext(validator, "External JSON Schema validator", "Editor or CI tool using the printed schema")
+
+Rel(dev, augur, "augur emit --plan plan.json; augur schema plan", "terminal")
+Rel(augur, dev, "Violations with JSON paths, or schema on stdout")
+Rel(dev, validator, "Validates plan.json against the schema")
+@enduml

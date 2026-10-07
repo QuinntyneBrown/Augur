@@ -1,0 +1,35 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Emit output safely
+
+Container(cli, "Augur.Cli", ".NET console host", "EmitCommand")
+Container_Boundary(emission, "Augur.Emission") {
+  Component(pipeline, "EmissionPipeline", "Orchestrator", "render -> guard -> policy -> stage -> move")
+  Component(selector, "EmitterSelector", "Factory", "Picks IEmitter from plan target")
+  Component(emitterIf, "IEmitter", "Interface", "Emit(EmissionContext) -> FileSet")
+  Component(context, "EmissionContext", "Record", "Plan, SolutionName, AngularProjectName only (L2-044)")
+  Component(fileset, "FileSet", "In-memory files", "UTF-8 no BOM, LF; relative paths (L2-032)")
+  Component(engine, "TemplateEngine", "Scriban", "Embedded templates; safe runtime (L2-058)")
+  Component(guid, "DeterministicGuid", "Helper", "Name-based GUIDs (L2-032)")
+  Component(guard, "OutputDirectoryGuard", "Check", "Containment; no reparse points (L2-045)")
+  Component(policy, "OutputDirectoryPolicy", "Check", "Empty, or --force (L2-033)")
+  Component(staging, "StagingDirectory", "Temp dir", "Sibling of output; deleted on Dispose (L2-034)")
+  Component(dryrun, "DryRunLister", "Reporter", "Sorted paths with (overwrite) (L2-035)")
+}
+ContainerDb(out, "Output directory", "Folder", "Emitted solution")
+
+Rel(cli, pipeline, "Emit(plan, outDir, force, dryRun)")
+Rel(pipeline, selector, "Select(plan.target)")
+Rel(selector, emitterIf, "Returns")
+Rel(pipeline, context, "Builds")
+Rel(pipeline, emitterIf, "Emit(context)")
+Rel(emitterIf, engine, "Render(template, context)")
+Rel(emitterIf, guid, "For(solution, project)")
+Rel(emitterIf, fileset, "Add / AddBinary")
+Rel(pipeline, guard, "Check(fileset, outDir)")
+Rel(pipeline, dryrun, "List(fileset, outDir) when --dry-run")
+Rel(pipeline, policy, "Check(outDir, force)")
+Rel(pipeline, staging, "Write(fileset)")
+Rel(staging, out, "Move files")
+@enduml

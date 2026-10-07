@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Query the Decisions API
+
+Person(dev, "Developer", "Runs augur plan")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "--model, --timeout; ConsoleReporter redacts the key")
+  Container(core, "Augur.Core", ".NET library", "TreeEvaluator calls IDecisionOracle once per level")
+  Container(oracle, "Augur.Oracle.OpenAI", ".NET library", "DecisionsApiOracle, RetryPolicy, BaseUrlPolicy, ApiKeyProvider")
+  ContainerDb(env, "Process environment", "Environment variables", "OPENAI_API_KEY, AUGUR_OPENAI_BASE_URL")
+}
+System_Ext(openai, "OpenAI Decisions API", "POST /v1/decisions")
+
+Rel(dev, cli, "Runs augur plan", "terminal")
+Rel(cli, core, "Starts evaluation")
+Rel(core, oracle, "AnswerAsync(input, requests)", "IDecisionOracle")
+Rel(oracle, env, "Reads key and base URL lazily")
+Rel(oracle, openai, "POST /v1/decisions with Bearer key", "HTTPS / JSON")
+Rel(oracle, cli, "Disclosure notice; diagnostic request log", "stderr")
+@enduml

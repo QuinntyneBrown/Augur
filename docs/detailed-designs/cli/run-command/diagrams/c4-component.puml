@@ -1,0 +1,33 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Run a command
+
+Person(dev, "Developer", "Runs augur")
+Container_Boundary(cli, "Augur.Cli") {
+  Component(program, "Program", "Entry point", "Builds RootCommand; returns ExitCode")
+  Component(root, "RootCommand", "System.CommandLine", "Six subcommands; --verbosity; --version; help routing")
+  Component(cmds, "PlanCommand … SchemaCommand", "Command classes", "One per verb; options with defaults")
+  Component(errors, "ErrorReporter", "Exception mapper", "error: line on stderr; AugurException -> ExitCode")
+  Component(reporter, "ConsoleReporter", "stderr writer", "Verbosity-gated Error/Warn/Info/Detail/Diagnostic")
+  Component(stdout, "StdoutWriter", "stdout writer", "Machine-readable output only")
+  Component(summary, "RunSummary", "Accumulator", "Sources, skipped, API requests, elapsed")
+  Component(version, "VersionInfo", "Formatter", "augur <v> (catalog <n>)")
+  Component(cancel, "CancellationSource", "Signal handler", "SIGINT / SIGTERM -> CancellationToken")
+}
+Container(core, "Augur.Core", ".NET library", "Handlers; DecisionCatalog.CatalogVersion")
+
+Rel(dev, program, "argv", "terminal")
+Rel(program, root, "Parse and invoke")
+Rel(program, cancel, "Registers signals")
+Rel(root, cmds, "Dispatches")
+Rel(root, version, "--version")
+Rel(cmds, core, "Calls handlers with CancellationToken")
+Rel(cmds, stdout, "Writes plan / schema / --json")
+Rel(cmds, reporter, "Progress and warnings")
+Rel(cmds, summary, "Records counts")
+Rel(summary, reporter, "Info(one-line summary)")
+Rel(errors, reporter, "Error(error: message)")
+Rel(program, errors, "Wraps invocation")
+Rel(version, core, "Reads CatalogVersion")
+@enduml

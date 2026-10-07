@@ -1,0 +1,83 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Validate the generation plan
+
+class PlanReader {
+  +long MaxBytes = 1048576
+  +Read(path: string): GenerationPlan
+}
+
+class PlanValidator {
+  +Validate(plan: GenerationPlan, catalog: DecisionCatalog): PlanValidationResult
+}
+
+class PlanValidationResult {
+  +IReadOnlyList<PlanViolation> Violations
+  +bool IsValid
+}
+
+class PlanViolation {
+  +string JsonPath
+  +string Message
+  +IReadOnlyList<string>? AllowedValues
+}
+
+class PlanValidationException {
+  +PlanValidationResult Result
+}
+
+class PlanSchemaGenerator {
+  +Generate(catalog: DecisionCatalog): JsonDocument
+}
+
+class GenerationPlan {
+  +int PlanVersion
+  +int CatalogVersion
+  +SolutionName SolutionName
+  +string InputHash
+  +IReadOnlyDictionary<string, PlanDecision> Decisions
+}
+
+class DecisionCatalog {
+  +int CatalogVersion
+  +IReadOnlyList<DecisionDefinition> Decisions
+}
+
+class SolutionName {
+  +{static} Pattern: string
+  +{static} Parse(text: string): SolutionName
+}
+
+class SchemaCommand {
+  +Invoke(): int
+}
+
+class EmitCommand {
+  +Invoke(planPath: string, outDir: string, force: bool, dryRun: bool): int
+}
+
+PlanValidationResult "1" *-- "*" PlanViolation
+PlanValidationException --> PlanValidationResult
+PlanReader ..> GenerationPlan : produces
+PlanValidator ..> GenerationPlan : validates
+PlanValidator ..> DecisionCatalog : reads
+PlanValidator ..> SolutionName : Parse
+PlanValidator ..> PlanValidationResult : returns
+PlanSchemaGenerator ..> DecisionCatalog : reads
+PlanSchemaGenerator ..> SolutionName : pattern
+EmitCommand ..> PlanReader
+EmitCommand ..> PlanValidator
+EmitCommand ..> PlanValidationException : throws when invalid
+SchemaCommand ..> PlanSchemaGenerator
+@enduml

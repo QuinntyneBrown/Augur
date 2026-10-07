@@ -1,0 +1,28 @@
+@startuml
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Components — Handle a low-confidence decision
+
+Container_Boundary(cli, "Augur.Cli") {
+  Component(selector, "PolicySelector", "Startup logic", "Option value, else terminal detection (L2-019)")
+  Component(prompt, "InteractivePromptHandler", "ILowConfidenceHandler", "Ranked prompt on stderr; reads stdin (L2-020)")
+  Component(view, "PromptView", "Formatter", "Orders answers; two-decimal probabilities")
+  Component(input, "IConsoleInput", "Abstraction", "stdin lines; scriptable in tests")
+}
+Container_Boundary(core, "Augur.Core") {
+  Component(evaluator, "TreeEvaluator", "Orchestrator", "Collects LowConfidence per level")
+  Component(handlerIf, "ILowConfidenceHandler", "Interface", "Handle(pending, state)")
+  Component(fallback, "DefaultFallbackHandler", "ILowConfidenceHandler", "Catalog default; Source = Fallback")
+  Component(fail, "FailHandler", "ILowConfidenceHandler", "Lists decisions; exit 3")
+  Component(options, "ResolverOptions", "Settings", "MinConfidenceOverride (L2-021)")
+}
+
+Rel(selector, handlerIf, "Chooses implementation")
+Rel(evaluator, handlerIf, "Handle(lowConfidence, state)")
+Rel(prompt, handlerIf, "Implements")
+Rel(fallback, handlerIf, "Implements")
+Rel(fail, handlerIf, "Implements")
+Rel(prompt, view, "Formats candidates")
+Rel(prompt, input, "ReadLine()")
+Rel(evaluator, options, "Passes to resolver")
+@enduml

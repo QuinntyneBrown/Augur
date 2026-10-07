@@ -1,0 +1,18 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Emit an Angular workspace
+
+Person(dev, "Developer", "Runs augur emit against a plan")
+Person(user, "End user", "Uses the emitted application in a browser")
+System(augur, "Augur CLI", "Renders the Angular workspace from embedded templates")
+System(emitted, "Emitted {name} application", "Angular standalone application")
+System(api, "Emitted {Name}.Api", "ASP.NET Core API (fullstack target)")
+System_Ext(oidc, "OpenID Connect authority", "Authorization Code + PKCE (authentication=true)")
+
+Rel(dev, augur, "Runs augur emit --plan --out", "terminal")
+Rel(augur, emitted, "Writes workspace files", "file system")
+Rel(user, emitted, "Uses", "HTTPS")
+Rel(emitted, api, "Calls under apiBaseUrl with bearer token", "HTTPS / JSON")
+Rel(emitted, oidc, "Redirects for sign-in; exchanges code with PKCE", "HTTPS")
+@enduml

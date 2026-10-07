@@ -1,0 +1,90 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Handle a low-confidence decision
+
+enum LowConfidencePolicy {
+  Default
+  Prompt
+  Fail
+}
+
+class PolicySelector {
+  +Select(option: LowConfidencePolicy?, stdinIsTerminal: bool, stderrIsTerminal: bool): LowConfidencePolicy
+}
+
+interface ILowConfidenceHandler {
+  +Handle(pending: IReadOnlyList<LowConfidence>, state: DecisionState): void
+}
+
+class DefaultFallbackHandler {
+  +Handle(pending, state): void
+}
+
+class FailHandler {
+  +Handle(pending, state): void
+}
+
+class InteractivePromptHandler {
+  -int MaxAttempts = 3
+  +Handle(pending, state): void
+}
+
+class PromptView {
+  +string DecisionId
+  +string Instructions
+  +IReadOnlyList<PromptRow> Rows
+  +Render(): string
+}
+
+class PromptRow {
+  +int Number
+  +string Value
+  +double Probability
+}
+
+interface IConsoleInput {
+  +ReadLine(): string?
+}
+
+class LowConfidence {
+  +DecisionDefinition Definition
+  +DecisionAnswer Raw
+}
+
+class UnresolvedDecisionsException {
+  +IReadOnlyList<string> DecisionIds
+}
+
+class ResolverOptions {
+  +double? MinConfidenceOverride
+}
+
+class ResolvedDecision {
+  +string Value
+  +DecisionSource Source
+}
+
+PolicySelector ..> LowConfidencePolicy : returns
+ILowConfidenceHandler <|.. DefaultFallbackHandler
+ILowConfidenceHandler <|.. FailHandler
+ILowConfidenceHandler <|.. InteractivePromptHandler
+InteractivePromptHandler ..> PromptView : builds
+InteractivePromptHandler ..> IConsoleInput : reads
+PromptView "1" *-- "1..*" PromptRow
+ILowConfidenceHandler ..> LowConfidence : consumes
+FailHandler ..> UnresolvedDecisionsException : throws
+InteractivePromptHandler ..> UnresolvedDecisionsException : throws after 3 invalid entries
+DefaultFallbackHandler ..> ResolvedDecision : stores Source = Fallback
+InteractivePromptHandler ..> ResolvedDecision : stores Source = User
+@enduml

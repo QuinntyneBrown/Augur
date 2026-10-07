@@ -1,0 +1,20 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Resolve a decision
+
+Person(dev, "Developer", "Runs augur plan")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "Maps InvalidAnswerException to exit codes 4 / 2")
+  Container(core, "Augur.Core", ".NET library", "AnswerValidator and DecisionResolver")
+  Container(oracle, "Augur.Oracle.OpenAI", ".NET library", "Deserializes /v1/decisions responses")
+  Container(script, "Augur.Oracle.Scripted", ".NET library", "Answers from --oracle-script")
+}
+System_Ext(openai, "OpenAI Decisions API", "Raw answers")
+
+Rel(dev, cli, "Runs augur plan", "terminal")
+Rel(cli, core, "Runs evaluation")
+Rel(oracle, core, "DecisionAnswer (Source = Api)")
+Rel(script, core, "DecisionAnswer (Source = Script)")
+Rel(oracle, openai, "POST /v1/decisions", "HTTPS / JSON")
+@enduml

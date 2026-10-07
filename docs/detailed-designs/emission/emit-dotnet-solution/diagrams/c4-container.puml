@@ -1,0 +1,30 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Emit a .NET solution
+
+Person(dev, "Developer", "Runs augur emit")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "EmitCommand")
+  Container(emission, "Augur.Emission", ".NET library", "IEmitter, FileSet, staging pipeline")
+  Container(dotnet, "Augur.Emission.DotNet", ".NET library", "DotNetSolutionEmitter and embedded templates")
+}
+System_Boundary(emitted, "Emitted {Name} solution") {
+  Container(api, "{Name}.Api", "ASP.NET Core", "Endpoints, auth, health")
+  Container(app, "{Name}.Application / Domain", ".NET libraries", "Handlers and entities (clean-architecture)")
+  Container(infra, "{Name}.Infrastructure", ".NET library", "DbContext and provider (ef-core-*)")
+  Container(worker, "{Name}.Worker", ".NET worker", "BackgroundService (background-processing)")
+  Container(tests, "{Name}.Tests", "xUnit", "Acceptance tests over the API")
+}
+System_Ext(oidc, "OpenID Connect authority", "Token issuer")
+
+Rel(dev, cli, "augur emit --plan plan.json --out ./out", "terminal")
+Rel(cli, emission, "Runs pipeline")
+Rel(emission, dotnet, "Emit(context)", "IEmitter")
+Rel(dotnet, emission, "FileSet")
+Rel(emission, emitted, "Stages and moves files", "file system")
+Rel(api, app, "References")
+Rel(app, infra, "Implemented by")
+Rel(tests, api, "WebApplicationFactory<Program>")
+Rel(api, oidc, "Validates JWT bearer tokens", "HTTPS")
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Emit output safely
+
+Person(dev, "Developer", "Runs augur emit")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "EmitCommand; exit code 5 on conflicts")
+  Container(core, "Augur.Core", ".NET library", "GenerationPlan, PlanValidator")
+  Container(emission, "Augur.Emission", ".NET library", "EmissionPipeline, FileSet, guard, staging, dry run")
+  Container(emitters, "Augur.Emission.DotNet / .Angular / .Fullstack", ".NET libraries", "IEmitter implementations; embedded Scriban templates")
+  ContainerDb(staging, "Staging directory", "Temp folder, same volume", "Rendered files before the move")
+  ContainerDb(out, "Output directory", "Folder", "Emitted solution")
+}
+
+Rel(dev, cli, "--plan, --out, --force, --dry-run", "terminal")
+Rel(cli, core, "Validate plan")
+Rel(cli, emission, "Emit(plan, outDir, options)")
+Rel(emission, emitters, "IEmitter.Emit(context) -> FileSet")
+Rel(emission, staging, "Writes FileSet")
+Rel(staging, out, "File.Move per file (overwrite only with --force)")
+@enduml

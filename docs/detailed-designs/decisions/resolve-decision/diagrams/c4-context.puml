@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Resolve a decision
+
+Person(dev, "Developer", "Runs augur plan")
+System(augur, "Augur CLI", "Validates raw answers and applies thresholds")
+System_Ext(openai, "OpenAI Decisions API", "Returns probabilities, choices, and scores")
+
+Rel(dev, augur, "Runs augur plan with", "terminal")
+Rel(openai, augur, "Raw typed answers", "HTTPS / JSON")
+@enduml

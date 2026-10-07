@@ -1,0 +1,21 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Run a command
+
+Person(dev, "Developer", "Runs augur")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "System.CommandLine; exit codes; stdout/stderr routing")
+  Container(core, "Augur.Core", ".NET library", "Catalog, behaviour tree, plan, lockfile")
+  Container(emission, "Augur.Emission.*", ".NET libraries", "Emitters for .NET, Angular, fullstack")
+  Container(oracle, "Augur.Oracle.*", ".NET libraries", "Decisions API and scripted oracles")
+}
+System_Ext(openai, "OpenAI Decisions API", "Answers catalog questions")
+
+Rel(dev, cli, "augur <command> [options]", "terminal")
+Rel(cli, dev, "stdout: machine-readable; stderr: diagnostics; exit code", "terminal")
+Rel(cli, core, "Dispatches plan / explain / catalog / schema")
+Rel(cli, emission, "Dispatches emit / generate")
+Rel(core, oracle, "AnswerAsync(ct)", "IDecisionOracle")
+Rel(oracle, openai, "POST /v1/decisions", "HTTPS / JSON")
+@enduml

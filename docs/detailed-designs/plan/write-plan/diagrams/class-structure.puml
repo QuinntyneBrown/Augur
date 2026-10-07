@@ -1,0 +1,69 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Write the generation plan
+
+class GenerationPlan {
+  +int PlanVersion = 1
+  +int CatalogVersion
+  +SolutionName SolutionName
+  +string InputHash
+  +IReadOnlyDictionary<string, PlanDecision> Decisions
+}
+
+class PlanDecision {
+  +string Value
+  +DecisionSource Source
+}
+
+class SolutionName {
+  +string Value
+  +IReadOnlyList<string> Segments
+  +{static} Parse(text: string): SolutionName
+  +{static} TryParse(text: string, out result: SolutionName): bool
+}
+
+class PlanBuilder {
+  +Build(state: DecisionState, name: SolutionName, inputHash: string, catalogVersion: int): GenerationPlan
+}
+
+class CanonicalJson {
+  +{static} JsonSerializerOptions Options
+  +{static} Serialize<T>(value: T): string
+}
+
+class PlanWriter {
+  +Write(plan: GenerationPlan, outPath: string?): void
+}
+
+class NameOption {
+  +Option<SolutionName> Build(): Option<SolutionName>
+}
+
+class UsageException {
+  +string Message
+}
+
+class DecisionState {
+  +IReadOnlyList<ResolvedDecision> Resolved
+}
+
+GenerationPlan "1" *-- "*" PlanDecision : decisions
+GenerationPlan --> SolutionName : names
+PlanBuilder ..> DecisionState : reads
+PlanBuilder ..> GenerationPlan : creates
+PlanWriter ..> CanonicalJson : serializes with
+PlanWriter ..> GenerationPlan : writes
+NameOption ..> SolutionName : Parse
+SolutionName ..> UsageException : throws on invalid name
+@enduml

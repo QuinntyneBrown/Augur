@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Install the tool
+
+Person(dev, "Developer", "Installs augur")
+System_Boundary(augur, "Augur CLI") {
+  Container(pkg, "Augur.Cli package", "NuGet .nupkg, PackAsTool", "ToolCommandName augur; net10.0; framework-dependent")
+  Container(runtime, ".NET 10 runtime", "Shared framework", "Supplies platform-specific pieces for each RID")
+}
+System_Ext(sdk, ".NET SDK", "dotnet tool install / uninstall")
+System_Ext(feed, "NuGet feed", "Package source")
+
+Rel(dev, sdk, "dotnet tool install --global Augur.Cli --add-source <feed>", "shell")
+Rel(sdk, feed, "Fetches Augur.Cli", "HTTPS")
+Rel(sdk, pkg, "Extracts and shims augur")
+Rel(pkg, runtime, "Runs on", "framework-dependent")
+Rel(dev, pkg, "augur <command>", "terminal")
+@enduml

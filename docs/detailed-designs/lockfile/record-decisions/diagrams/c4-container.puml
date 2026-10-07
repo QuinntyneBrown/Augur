@@ -1,0 +1,19 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Record decisions in the lockfile
+
+Person(dev, "Developer", "Runs augur plan")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "--lock <path>; reads before, writes after evaluation")
+  Container(core, "Augur.Core", ".NET library", "Lockfile, LockfileBuilder, LockfileStore, hashers")
+  ContainerDb(lock, "decisions.json", "JSON file", "lockfileVersion, catalogVersion, inputHash, entries")
+  ContainerDb(tmp, "decisions.json.<random>.tmp", "Temporary file", "Same directory; renamed over the target")
+}
+
+Rel(dev, cli, "Runs augur plan", "terminal")
+Rel(cli, core, "Read(); Write(lockfile)")
+Rel(core, lock, "Reads existing entries", "System.Text.Json")
+Rel(core, tmp, "Writes canonical JSON, flushes", "System.Text.Json")
+Rel(tmp, lock, "File.Move(overwrite: true)", "rename")
+@enduml

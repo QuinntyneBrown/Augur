@@ -1,0 +1,15 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — List the catalog
+
+Person(dev, "Developer", "Runs augur catalog")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "CatalogCommand; --json; StdoutWriter")
+  Container(core, "Augur.Core", ".NET library", "DecisionCatalog; CatalogListing; CatalogJsonWriter")
+}
+
+Rel(dev, cli, "augur catalog [--json]", "terminal")
+Rel(cli, core, "Render(catalog) as text or JSON")
+Rel(cli, dev, "Listing on stdout; exit 0", "terminal")
+@enduml

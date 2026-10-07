@@ -1,0 +1,14 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — Run a command
+
+Person(dev, "Developer", "Runs augur subcommands; may press Ctrl+C")
+Person_Ext(ci, "CI script", "Runs augur unattended; branches on exit code")
+System(augur, "Augur CLI", "Parses commands, routes output, returns exit codes")
+System_Ext(openai, "OpenAI Decisions API", "In-flight requests are cancelled on SIGINT")
+
+Rel(dev, augur, "Runs augur <command>; reads stdout and stderr", "terminal")
+Rel(ci, augur, "Runs augur <command>; reads exit code", "shell")
+Rel(augur, openai, "Requests, cancellable", "HTTPS / JSON")
+@enduml

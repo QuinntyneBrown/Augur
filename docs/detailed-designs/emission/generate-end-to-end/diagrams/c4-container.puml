@@ -1,0 +1,24 @@
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Containers — Generate end to end
+
+Person(dev, "Developer", "Runs augur generate")
+System_Boundary(augur, "Augur CLI") {
+  Container(cli, "Augur.Cli", ".NET console host", "GenerateCommand; union of plan and emit options")
+  Container(core, "Augur.Core", ".NET library", "TreeEvaluator, LockfileStore, PlanBuilder, PlanValidator")
+  Container(oracle, "Augur.Oracle.OpenAI", ".NET library", "DecisionsApiOracle")
+  Container(emission, "Augur.Emission", ".NET library", "EmissionPipeline")
+  ContainerDb(lock, "decisions.json", "JSON file", "Recorded answers")
+  ContainerDb(out, "Output directory", "Folder", "Solution + augur.plan.json")
+}
+System_Ext(openai, "OpenAI Decisions API", "Open decisions")
+
+Rel(dev, cli, "augur generate ...", "terminal")
+Rel(cli, core, "Evaluate; write lockfile; build and validate plan")
+Rel(core, oracle, "AnswerAsync per level")
+Rel(oracle, openai, "POST /v1/decisions", "HTTPS / JSON")
+Rel(core, lock, "Writes entries")
+Rel(cli, emission, "Emit(plan + augur.plan.json)")
+Rel(emission, out, "Stage and move")
+@enduml

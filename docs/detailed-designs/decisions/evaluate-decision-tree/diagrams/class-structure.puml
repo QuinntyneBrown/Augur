@@ -1,0 +1,96 @@
+@startuml
+' --- shared skin header ---
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontName Arial
+skinparam ArrowColor #344054
+skinparam class {
+  BorderColor #344054
+  FontColor #101828
+  BackgroundColor #F9FAFB
+}
+' --------------------------
+title Class structure — Evaluate the decision tree
+
+class DecisionCatalog {
+  +int CatalogVersion
+  +IReadOnlyList<DecisionDefinition> Decisions
+  +DecisionDefinition Get(id: string): DecisionDefinition
+  +Validate(): void
+}
+
+abstract class DecisionDefinition {
+  +string Id
+  +string Instructions
+  +string Default
+  +WhenClause? When
+  +string QuestionHash
+}
+
+class WhenClause {
+  +string DependsOn
+  +IReadOnlySet<string> AcceptedValues
+  +Evaluate(state: DecisionState): bool
+}
+
+class DependencyLeveller {
+  +Levels(catalog: DecisionCatalog): IReadOnlyList<IReadOnlyList<DecisionDefinition>>
+}
+
+enum DecisionStatus {
+  Pending
+  Skipped
+  Resolved
+}
+
+class DecisionState {
+  +StatusOf(id: string): DecisionStatus
+  +Get(id: string): ResolvedDecision?
+  +MarkSkipped(id: string): void
+  +Store(decision: ResolvedDecision): void
+  +Pending(level: IReadOnlyList<DecisionDefinition>): IReadOnlyList<DecisionDefinition>
+}
+
+class ResolvedDecision {
+  +string Id
+  +string Value
+  +DecisionSource Source
+  +DecisionAnswer? Raw
+  +string QuestionHash
+  +DateTimeOffset ResolvedAt
+}
+
+class DecisionRequest {
+  +DecisionDefinition Definition
+}
+
+class TreeEvaluator {
+  +EvaluateAsync(input: SpecificationInput, overrides: OverrideSet, ct: CancellationToken): Task<DecisionState>
+}
+
+interface IDecisionOracle {
+  +AnswerAsync(input: SpecificationInput, requests: IReadOnlyList<DecisionRequest>, ct: CancellationToken): Task<IReadOnlyList<DecisionAnswer>>
+}
+
+class DecisionResolver {
+  +Resolve(definition: DecisionDefinition, answer: DecisionAnswer): Resolution
+}
+
+class RequestCounter {
+  +int ApiRequests
+  +Increment(): void
+}
+
+DecisionCatalog "1" *-- "*" DecisionDefinition : owns
+DecisionDefinition "1" o-- "0..1" WhenClause : applies when
+DecisionState "1" *-- "*" ResolvedDecision : holds
+DecisionState --> DecisionStatus : per id
+TreeEvaluator ..> DependencyLeveller : orders levels
+TreeEvaluator --> DecisionState : reads / writes
+TreeEvaluator ..> IDecisionOracle : one call per level
+TreeEvaluator ..> DecisionResolver : resolves answers
+TreeEvaluator ..> DecisionRequest : builds
+TreeEvaluator --> RequestCounter : counts
+WhenClause ..> DecisionState : evaluates against
+@enduml

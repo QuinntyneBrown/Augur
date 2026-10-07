@@ -1,0 +1,12 @@
+@startuml
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title System Context — List the catalog
+
+Person(dev, "Developer", "Reads the catalog in a terminal")
+Person_Ext(ci, "CI script", "Reads the catalog as JSON")
+System(augur, "Augur CLI", "Lists decisions, answers, defaults, dependencies")
+
+Rel(dev, augur, "augur catalog", "terminal")
+Rel(ci, augur, "augur catalog --json", "shell / stdout")
+@enduml
