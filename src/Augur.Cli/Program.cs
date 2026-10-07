@@ -29,6 +29,12 @@ public static class Program
     public static async Task<int> RunAsync(ConsoleHost host)
     {
         var root = new RootCommand("Augur decides what to generate with the OpenAI Decisions API, then emits code deterministically.");
+        root.Directives.Clear();
+        foreach (var version in root.Options.OfType<VersionOption>())
+        {
+            version.Action = new VersionAction();
+        }
+
         root.SetAction(_ =>
         {
             WriteHelp(root, [], host.Stderr);
