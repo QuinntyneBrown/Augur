@@ -54,7 +54,7 @@ internal static class DecisionRunner
         {
             LowConfidencePolicy.Default => new DefaultFallbackHandler(run.Reporter),
             LowConfidencePolicy.Fail => new FailHandler(run.Reporter),
-            _ => throw new NotImplementedException("the prompt policy is not implemented yet"),
+            _ => new InteractivePromptHandler(run.StdinReader, run.Host.Stderr),
         };
     }
 }

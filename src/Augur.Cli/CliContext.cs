@@ -68,6 +68,11 @@ internal sealed record CommandRun(ConsoleHost Host, ParseResult ParseResult, Con
 {
     public PathResolver Paths { get; } = new(Host.Cwd);
 
+    /// <summary>Line-oriented stdin for prompts; created on first use so a <c>--spec -</c> read sees the raw bytes first.</summary>
+    public TextReader StdinReader => _stdinReader ??= new StreamReader(Host.Stdin, new System.Text.UTF8Encoding(false), detectEncodingFromByteOrderMarks: false, leaveOpen: true);
+
+    private TextReader? _stdinReader;
+
     /// <summary>Writes machine-readable output. Nothing else is ever written to stdout.</summary>
     public void WriteStdout(string text) => Host.Stdout.Write(text);
 }

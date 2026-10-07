@@ -75,7 +75,7 @@ public sealed class AnswerScript
 
     public AnswerScript Raw(string id, JsonObject raw)
     {
-        _answers[id] = raw;
+        _answers[id] = raw.DeepClone();
         return this;
     }
 
