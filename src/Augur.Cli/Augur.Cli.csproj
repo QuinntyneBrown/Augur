@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Augur.Cli</RootNamespace>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>augur</ToolCommandName>
+    <PackageId>Augur.Cli</PackageId>
+    <Description>Augur: a .NET and Angular code generator that uses the OpenAI Decisions API to decide what to generate, then emits code deterministically.</Description>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Augur.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Augur.Core/Augur.Core.csproj" />
+  </ItemGroup>
+</Project>
