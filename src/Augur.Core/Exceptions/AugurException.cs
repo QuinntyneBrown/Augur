@@ -5,6 +5,9 @@ public abstract class AugurException(string message, ExitCode exitCode, Exceptio
     : Exception(message, innerException)
 {
     public ExitCode ExitCode { get; } = exitCode;
+
+    /// <summary>Lines that explain the failure, written before the single <c>error:</c> line at every verbosity.</summary>
+    public virtual IReadOnlyList<string> Details => [];
 }
 
 /// <summary>Invalid arguments or invalid input files (exit code 2).</summary>

@@ -30,6 +30,9 @@ internal sealed class ConsoleReporter(TextWriter stderr, Verbosity level) : IRep
 
     public void Error(string message) => Write("error: " + message);
 
+    /// <summary>A line explaining an error, written at every verbosity and indented under it.</summary>
+    public void ErrorDetail(string message) => Write("  " + message);
+
     public void Warn(string message)
     {
         if (Level >= Verbosity.Normal)

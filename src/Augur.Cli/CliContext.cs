@@ -33,6 +33,11 @@ internal sealed class CliContext(ConsoleHost host)
         }
         catch (AugurException ex)
         {
+            foreach (var detail in ex.Details)
+            {
+                reporter.ErrorDetail(detail);
+            }
+
             reporter.Error(ex.Message);
             return (int)ex.ExitCode;
         }
