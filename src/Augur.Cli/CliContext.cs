@@ -66,6 +66,8 @@ internal sealed class CliContext(ConsoleHost host)
 /// <summary>Everything a running command needs: its arguments, its console, its reporter, and its cancellation token.</summary>
 internal sealed record CommandRun(ConsoleHost Host, ParseResult ParseResult, ConsoleReporter Reporter, CancellationToken Token)
 {
+    public PathResolver Paths { get; } = new(Host.Cwd);
+
     /// <summary>Writes machine-readable output. Nothing else is ever written to stdout.</summary>
     public void WriteStdout(string text) => Host.Stdout.Write(text);
 }
