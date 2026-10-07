@@ -20,6 +20,8 @@
   <ItemGroup>
     <Compile Include="../Augur.Tests/Support/CliRunner.cs" Link="Support/CliRunner.cs" />
     <Compile Include="../Augur.Tests/Support/Plans.cs" Link="Support/Plans.cs" />
+    <Compile Include="../Augur.Tests/Support/AnswerScript.cs" Link="Support/AnswerScript.cs" />
+    <Compile Include="../Augur.Tests/Support/StubDecisionsServer.cs" Link="Support/StubDecisionsServer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Augur.Cli/Augur.Cli.csproj" />

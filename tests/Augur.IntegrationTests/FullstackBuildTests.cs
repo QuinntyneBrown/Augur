@@ -88,7 +88,12 @@ public sealed class FullstackBuildTests
             var health = await http.GetStringAsync(new Uri("/api/health", UriKind.Relative));
 
             Assert.Equal(HttpStatusCode.OK, home.StatusCode);
-            Assert.Contains("<app-root>", await home.Content.ReadAsStringAsync());
+            var index = await home.Content.ReadAsStringAsync();
+            Assert.Contains("<app-root>", index);
+            var script = System.Text.RegularExpressions.Regex.Match(index, @"src=""(main-[^""]+\.js)""").Groups[1].Value;
+            var bundle = await http.GetAsync(new Uri($"/{script}", UriKind.Relative));
+            Assert.Equal(HttpStatusCode.OK, bundle.StatusCode);
+            Assert.Equal("text/javascript", bundle.Content.Headers.ContentType?.MediaType);
             Assert.Equal(HttpStatusCode.OK, clientRoute.StatusCode);
             Assert.Contains("<app-root>", await clientRoute.Content.ReadAsStringAsync());
             Assert.Equal(HttpStatusCode.NotFound, missingApi.StatusCode);

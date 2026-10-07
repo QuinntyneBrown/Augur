@@ -12,9 +12,9 @@ set of options that Augur supports, and every choice is recorded so that runs
 are reproducible.
 
 > [!IMPORTANT]
-> Augur is in early development. No packages have been published yet, and the
-> commands and file formats described here may change before the first release.
-> The full behavior is specified in [`docs/specs`](docs/specs).
+> Augur is pre-release. Every command described here works when built from
+> source, but no package has been published to NuGet yet, and file formats may
+> change before 1.0. The full behavior is specified in [`docs/specs`](docs/specs).
 
 ## Contents
 
@@ -22,6 +22,7 @@ are reproducible.
 - [How it works](#how-it-works)
 - [Getting started](#getting-started)
 - [Usage](#usage)
+- [What Augur generates](#what-augur-generates)
 - [Configuration](#configuration)
 - [Decision catalog](#decision-catalog)
 - [Data and privacy](#data-and-privacy)
@@ -78,22 +79,34 @@ specification (text + images) ──► behaviour tree ──► GenerationPlan 
   when a decision has to be sent to the API; replayed, offline and scripted
   runs do not need one.
 
-### Install
+### Install from source
 
-Once released, Augur will be distributed as a .NET global tool:
-
-```shell
-dotnet tool install --global Augur.Cli
-augur --version
-```
-
-### Build from source
+Augur is a .NET tool. Until it is published to NuGet, pack and install it from
+a clone:
 
 ```shell
 git clone https://github.com/QuinntyneBrown/Augur.git
 cd Augur
+dotnet pack src/Augur.Cli -c Release -o ./artifacts
+dotnet tool install --global Augur.Cli --add-source ./artifacts
+augur --version
+```
+
+Once it is published, `dotnet tool install --global Augur.Cli` is enough.
+
+### Build and test
+
+```shell
 dotnet build
 dotnet test
+```
+
+`dotnet test` runs the fast suite. The slow suite builds and tests the code
+Augur emits, drives it in a browser, and installs the packed tool; it needs
+Node.js 22 and runs only when asked:
+
+```shell
+AUGUR_RUN_SLOW=1 dotnet test tests/Augur.IntegrationTests
 ```
 
 ### Quick start
@@ -184,6 +197,19 @@ stderr.
 | 4 | Decisions API failure |
 | 5 | Output conflict or file-system write failure |
 | 130 | Cancelled by the user |
+
+## What Augur generates
+
+| Target | Output |
+|--------|--------|
+| `dotnet` | A .NET 10 solution (`{Name}.slnx`) with an API in the chosen architecture, optional EF Core persistence, JWT bearer authentication, a background worker, and an xUnit test project. |
+| `angular` | An Angular 21 workspace with standalone components, an accessible and responsive app shell, optional Angular Material, signals or an NgRx signal store, optional server-side rendering, and OpenID Connect sign-in with PKCE. |
+| `fullstack` | Both: the .NET solution at the root and the Angular workspace in `web/`. In development the Angular server proxies `/api`; `dotnet publish` builds the Angular app into the API's `wwwroot`, so it deploys as one unit. |
+
+Every emitted file depends only on the plan's decisions and the solution name;
+no text from the specification or the model is copied into code. Package
+versions are pinned exactly, and emitted Angular workspaces include a
+`package-lock.json`.
 
 ## Configuration
 

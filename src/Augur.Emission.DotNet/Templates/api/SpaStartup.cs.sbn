@@ -8,6 +8,10 @@ public static class SpaStartup
 {
     public const string IndexFile = "{{ IndexFile }}";
 
+    /// <summary>
+    /// <c>nonfile</c> keeps requests for files such as main.js away from the fallback, so the static file middleware
+    /// serves them; the regex keeps unknown API paths returning 404.
+    /// </summary>
     public static void MapFallback(WebApplication app) =>
-        app.MapFallbackToFile("{*path:regex(^(?!api(/|$)).*$)}", IndexFile).AllowAnonymous();
+        app.MapFallbackToFile("{*path:nonfile:regex(^(?!api(/|$)).*$)}", IndexFile).AllowAnonymous();
 }

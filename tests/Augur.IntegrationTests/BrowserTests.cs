@@ -80,7 +80,7 @@ public sealed class BrowserTests
         await menu.ClickAsync();
         await Assertions.Expect(home).ToBeVisibleAsync();
         await NavLink(narrow.Page, "Sign in").ClickAsync();
-        await narrow.Page.WaitForURLAsync("**/sign-in");
+        await Assertions.Expect(narrow.Page).ToHaveURLAsync(SignInUrl());
         await Assertions.Expect(home).ToBeHiddenAsync();
 
         // L2-055 AC5: every visible interactive element is at least 44x44 at 375px.
@@ -147,7 +147,7 @@ public sealed class BrowserTests
         {
             await tabbing.Page.Keyboard.PressAsync("Tab");
             var focused = await tabbing.Page.EvaluateAsync<JsonElement>(
-                "() => { const e = document.activeElement; const s = getComputedStyle(e); return { name: e.textContent.trim() || e.getAttribute('aria-label') || e.tagName, outline: s.outlineStyle, width: parseFloat(s.outlineWidth) }; }");
+                "() => { const e = document.activeElement; const s = getComputedStyle(e); return { name: e === document.body || e === document.documentElement ? 'BODY' : (e.textContent.trim() || e.getAttribute('aria-label') || e.tagName), outline: s.outlineStyle, width: parseFloat(s.outlineWidth) }; }");
             var focusedName = focused.GetProperty("name").GetString()!;
             if (focusedName is "BODY")
             {
@@ -170,7 +170,7 @@ public sealed class BrowserTests
         var titles = await browser.OpenAsync(site.Url, 1200);
         var homeTitle = await titles.Page.TitleAsync();
         await NavLink(titles.Page, "Sign in").ClickAsync();
-        await titles.Page.WaitForURLAsync("**/sign-in");
+        await Assertions.Expect(titles.Page).ToHaveURLAsync(SignInUrl());
         await Assertions.Expect(titles.Page.Locator("main h1")).ToBeFocusedAsync();
         Check(await titles.Page.TitleAsync() != homeTitle, "the sign-in page has the same title as home");
 
@@ -208,6 +208,9 @@ public sealed class BrowserTests
 
         Assert.True(failures.Count == 0, $"{uiLibrary} shell ({build.Root}):\n{string.Join('\n', failures)}");
     }
+
+    /// <summary>In-app navigation changes the URL without a load event, so tests poll the URL instead of waiting for a load.</summary>
+    private static System.Text.RegularExpressions.Regex SignInUrl() => new("/sign-in$");
 
     private static ILocator NavLink(IPage page, string name) =>
         page.Locator("#main-nav a", new() { HasTextString = name });

@@ -20,7 +20,7 @@ describe('App', () => {
 
     expect(element.querySelector('a, button')?.textContent?.trim()).toBe('Skip to main content');
     expect(element.querySelectorAll('header')).toHaveLength(1);
-    expect(element.querySelectorAll('nav')).toHaveLength(1);
+    expect(element.querySelectorAll('nav, [role="navigation"]')).toHaveLength(1);
     expect(element.querySelectorAll('main')).toHaveLength(1);
   });
 

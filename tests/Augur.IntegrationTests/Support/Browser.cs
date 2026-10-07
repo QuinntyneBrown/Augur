@@ -23,6 +23,8 @@ public sealed class Browser : IAsyncDisposable
     /// <summary>Installs Chromium for this Playwright version if needed, then launches it.</summary>
     public static async Task<Browser> LaunchAsync()
     {
+        // Never delete browsers that other projects on this machine installed for other Playwright versions.
+        Environment.SetEnvironmentVariable("PLAYWRIGHT_SKIP_BROWSER_GC", "1");
         var exitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
         if (exitCode != 0)
         {

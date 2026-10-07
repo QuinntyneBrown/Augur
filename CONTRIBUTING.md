@@ -44,6 +44,47 @@ Security vulnerabilities must not be reported in public issues. Follow
 
 The test suite does not call the Decisions API and does not need an API key.
 
+### The slow suite
+
+`tests/Augur.IntegrationTests` builds and tests the code Augur emits, drives the
+emitted Angular apps in a headless browser, audits their dependencies, and
+installs the packed tool. It needs Node.js 22 and runs only when asked:
+
+```shell
+AUGUR_RUN_SLOW=1 dotnet test tests/Augur.IntegrationTests
+```
+
+It builds a pairwise-covering set of plans by default; set
+`AUGUR_FULL_MATRIX=1` to build every combination. Set `AUGUR_KEEP_BUILDS=1` to
+keep the emitted code for inspection.
+
+### Changing templates
+
+- Golden copies of emitted code live in `tests/Augur.Tests/Golden`. After an
+  intended template change, run `AUGUR_UPDATE_GOLDEN=1 dotnet test` and review
+  the diff before committing.
+- Emitted Angular workspaces ship one of 16 embedded `package-lock.json` files.
+  When you change an npm version or dependency in
+  `src/Augur.Emission.Angular/AngularModel.cs`, regenerate them with
+  `pwsh eng/Regenerate-AngularLockfiles.ps1` and run the slow suite.
+- Changing a decision's instructions, options, descriptions, or thresholds
+  changes its question hash. Bump the catalog version and update
+  `tests/Augur.Tests/Catalog/question-hashes.v2.json` as the failing test
+  explains.
+
+### Release checklist
+
+Before tagging a release:
+
+1. Run the full slow suite: `AUGUR_RUN_SLOW=1 AUGUR_FULL_MATRIX=1 dotnet test tests/Augur.IntegrationTests`.
+   It builds and tests every emitted combination and runs the npm and NuGet vulnerability audits.
+2. Check Core Web Vitals by hand (L2-057): emit an `angular` plan with
+   `server-side-rendering=false`, run `npm ci` and `npm run build`, serve
+   `dist/<name>/browser`, and run Lighthouse with mobile emulation against the
+   home page. Largest Contentful Paint must be at most 2.5 s and Cumulative
+   Layout Shift at most 0.1.
+3. Update `CHANGELOG.md` and the `<Version>` in `Directory.Build.props`.
+
 ## Development workflow
 
 Augur follows requirements-first, acceptance test-driven development. The full
